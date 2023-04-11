@@ -1,0 +1,45 @@
+.mt {
+  margin-top: 10px;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.flex-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.padding-all {
+  padding: 10px;
+}
+
+.fw-bold {
+  font-weight: bold;
+}
+
+.fs-lg {
+  font-size: 0.85rem;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.txt-clr {
+  color: var(--li-child-text-clr);
+}
+
+input {
+  color: orange;
+  border-radius: 5px;
+  background-color: #535858;
+}
+
+input[placeholder="Enter description"] {
+  color: lightgray;
+}

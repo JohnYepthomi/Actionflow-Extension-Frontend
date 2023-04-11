@@ -1,0 +1,59 @@
+body{
+	font-family: ubuntu;
+	background-color: var(--body-bg-clr);
+}
+
+.action-title{
+	font-size: 0.78rem;
+	font-weight: bold;
+	margin-bottom: 10px;
+	color: var(--title-clr);
+}
+
+.actions-list, .interaction-items, ul{
+	text-decoration: none;
+	list-style: none;
+	padding: 0px;
+	margin: 0;
+	user-select: none;
+}
+
+.actions-list{
+	padding: 10px 0px 10px 0px;
+}
+
+.interaction-items{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 5px;
+}
+
+.interaction-items li{
+	display: flex;
+	flex-wrap: no-wrap;
+	align-items: center;
+	gap: 10px;
+	color: var(--li-clr);
+	background-color: var(--li-bg-clr);
+	padding: 5px;
+	font-size: 0.68rem;
+	font-weight: bold;
+	border-radius: 3px;
+	cursor: pointer;
+	width: 70px;
+}
+
+.interaction-items li:hover{
+	background-color: var(--li-hover-bg-clr);
+	color: var(--li-hover-clr);
+}
+
+.menu-header{
+	padding: 10px;
+}
+
+.actions-item #text{
+	pointer-events: none;
+}
+
