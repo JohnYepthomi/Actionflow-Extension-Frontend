@@ -1,11 +1,12 @@
 import ActionMenu from "./ActionMenu";
-import { useState, useEffect, useRef } from "react";
 import InteractionInfo from "./InteractionInfo";
-import "../styles/workflow.css";
-import messageTab from "../utils/messageTab";
+import ConditionalsInfo from "./ConditionalsInfo";
 import { Interactions } from "../ActionsDefinitions/definitions";
+import { useState, useEffect } from "react";
+import messageTab from "../utils/messageTab";
+import "../styles/workflow.css";
 
-function WorkflowItem({ actions }) {
+function WorkflowItem({ actions, setActions }) {
   if (!actions) return;
 
   function handleActionClick(e) {
@@ -16,11 +17,11 @@ function WorkflowItem({ actions }) {
     const actionHeaderEl = e.currentTarget;
     const actionDetailsEl =
       actionHeaderEl.parentElement.querySelector(".action-details");
-
-    if (actionDetailsEl.style.display === "block") {
+    const display = actionDetailsEl.style.display;
+    if (display === "" || display === "flex") {
       actionDetailsEl.style.display = "none";
     } else {
-      actionDetailsEl.style.display = "block";
+      actionDetailsEl.style.display = "flex";
     }
   }
 
@@ -31,13 +32,23 @@ function WorkflowItem({ actions }) {
           <input type="checkbox" id="accept" name="accept" value="yes" />
           <div className="caption">
             <div className="name">{action.name}</div>
-            <div>{action.svg()}</div>
+            <div className="flex-row align-center justify-center">
+              {action.svg()}
+            </div>
           </div>
         </div>
-        {action.actionType === "Interaction" && (
+        {action.actionType === "Interactions" && (
           <InteractionInfo
             actionName={action.name}
             actionProps={action.props}
+          />
+        )}
+        {action.actionType === "Conditionals" && (
+          <ConditionalsInfo
+            conditionType="IF"
+            setActions={setActions}
+            actions={actions}
+            actionId={action.id}
           />
         )}
       </li>
@@ -45,14 +56,16 @@ function WorkflowItem({ actions }) {
   });
 }
 
-export default function Workflow({ items }) {
+export default function Workflow() {
   const [actions, setActions] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [activeTab, setActiveTab] = useState();
 
   useEffect(() => {
     try {
       handleChromeRuntimeMessages(setActions);
       getRecordingStatus();
+      getCurentActiveTab();
     } catch (err) {
       console.log("Warning: Not Runnning in Chrome Extension context");
       console.warn(err);
@@ -60,7 +73,11 @@ export default function Workflow({ items }) {
   }, []);
 
   async function getRecordingStatus() {
-    await messageTab("get-recording-status");
+    try {
+      await messageTab("get-recording-status");
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   async function handleRecord(e) {
@@ -74,8 +91,28 @@ export default function Workflow({ items }) {
       }
     } catch (err) {
       console.log("Warning: Not Runnning in Chrome Extension context");
-      console.warn(err);
+      console.log(err);
     }
+  }
+
+  function guidGenerator() {
+    var S4 = function () {
+      return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+    };
+    return (
+      S4() +
+      S4() +
+      "-" +
+      S4() +
+      "-" +
+      S4() +
+      "-" +
+      S4() +
+      "-" +
+      S4() +
+      S4() +
+      S4()
+    );
   }
 
   function handleChromeRuntimeMessages(setActions) {
@@ -83,12 +120,15 @@ export default function Workflow({ items }) {
 
     chrome.runtime.onMessage.addListener(async function (
       request,
-      sender,
-      sendResponse
+      _sender,
+      _sendResponse
     ) {
       if (request.status === "new-recorded-action") {
         const newRecordedAction = request.payload;
         console.log({ newRecordedAction });
+        // Give it an ID
+        newRecordedAction["id"] = guidGenerator();
+
         // Append Action Icon
         newRecordedAction["svg"] = Interactions.filter(
           (idata) =>
@@ -103,18 +143,100 @@ export default function Workflow({ items }) {
     });
   }
 
+  async function getCurentActiveTab() {
+    async function asyncStorageGet(item) {
+      var getValue = new Promise(function (resolve, reject) {
+        chrome.storage.local.get(item, (data) => {
+          resolve(data[item]);
+        });
+      });
+
+      let gV = await getValue;
+      return gV;
+    }
+
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      for (let [key, { _oldValue, newValue }] of Object.entries(changes)) {
+        if (key === "lastActiveTabData") {
+          setActiveTab((state) => (state = newValue));
+        }
+      }
+    });
+
+    const lasActiveData = await asyncStorageGet("lastActiveTabData");
+    if (lasActiveData) setActiveTab((state) => (state = lasActiveData));
+  }
+
   return (
-    <div>
+    <div
+      style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0px 30px",
+        color: "white",
+        flexDirection: "column",
+        gap: "3px",
+      }}
+    >
       <ActionMenu setActions={setActions} />
 
+      {/* Active Tab View */}
+      {activeTab && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "5px",
+          }}
+        >
+          <div style={{ fontWeight: "bold", color: "white", padding: "5px" }}>
+            Active Tab
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "center",
+              padding: "3px",
+              gap: "5px",
+            }}
+          >
+            <img
+              src={activeTab.icon}
+              alt="Active Tab favicon"
+              width="15px"
+              height="15px"
+            />
+            <div
+              style={{
+                fontWeight: "bold",
+                textOverflow: "ellipsis",
+                color: "lightgray",
+                overflow: "hidden",
+                width: "35vw",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {activeTab.title}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recording Button */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          marginTop: "20px",
         }}
       >
-        <buton
+        <button
           onClick={handleRecord}
           style={{
             color: "white",
@@ -124,16 +246,22 @@ export default function Workflow({ items }) {
             borderRadius: "3px",
             border: "none",
             cursor: "pointer",
+            width: "100px",
+            fontWeight: "bold",
           }}
         >
           {isRecording ? "Stop Recording" : "Start Recording"}
-        </buton>
+        </button>
       </div>
 
-      <div className="workflow-container">WORKFLOW</div>
-      <ul className="workflow-ul">
-        <WorkflowItem actions={actions} />
-      </ul>
+      <div className="workflow-container">WORKFLOWS</div>
+
+      {/* Workflows */}
+      {actions.length > 0 && (
+        <ul className="workflow-ul">
+          <WorkflowItem actions={actions} setActions={setActions} />
+        </ul>
+      )}
     </div>
   );
 }

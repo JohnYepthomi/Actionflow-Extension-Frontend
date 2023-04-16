@@ -1,59 +1,99 @@
-body{
-	font-family: ubuntu;
-	background-color: var(--body-bg-clr);
+body {
+  font-family: ubuntu;
+  margin: 0;
+  background-color: var(--body-bg-clr);
 }
 
-.action-title{
-	font-size: 0.78rem;
-	font-weight: bold;
-	margin-bottom: 10px;
-	color: var(--title-clr);
+.action-title {
+  font-size: 0.78rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: var(--title-clr);
 }
 
-.actions-list, .interaction-items, ul{
-	text-decoration: none;
-	list-style: none;
-	padding: 0px;
-	margin: 0;
-	user-select: none;
+.actions-list,
+.interaction-items,
+ul {
+  text-decoration: none;
+  list-style: none;
+  padding: 0px;
+  margin: 0;
+  user-select: none;
 }
 
-.actions-list{
-	padding: 10px 0px 10px 0px;
+.actions-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 30px;
+  position: absolute;
+  top: 0;
+  left: -300px;
+  bottom: 0;
+  height: 100vh;
+  width: 300px;
+  transition: left 0.19s ease;
+  /* padding: 10px 10px 10px 10px; */
+  background-color: rgb(29, 30, 30);
+  z-index: 99999999;
 }
 
-.interaction-items{
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 5px;
+.actions-list::after {
+  content: "MENU";
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  position: absolute;
+  display: flex;
+  font-size: 0.63rem;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  right: -16px;
+  top: calc(80vh / 2);
+  bottom: 0;
+  padding: 3px;
+  width: 10px;
+  height: 60px;
+  border-radius: 0px 3px 3px 0px;
+  background-color: rgb(185, 65, 65);
+  cursor: pointer;
 }
 
-.interaction-items li{
-	display: flex;
-	flex-wrap: no-wrap;
-	align-items: center;
-	gap: 10px;
-	color: var(--li-clr);
-	background-color: var(--li-bg-clr);
-	padding: 5px;
-	font-size: 0.68rem;
-	font-weight: bold;
-	border-radius: 3px;
-	cursor: pointer;
-	width: 70px;
+.interaction-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
-.interaction-items li:hover{
-	background-color: var(--li-hover-bg-clr);
-	color: var(--li-hover-clr);
+.interaction-items li {
+  display: flex;
+  flex-wrap: no-wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--li-clr);
+  background-color: var(--li-bg-clr);
+  padding: 5px;
+  font-size: 0.68rem;
+  font-weight: bold;
+  border-radius: 3px;
+  cursor: pointer;
+  width: 70px;
+  border-top: 1px solid gray;
 }
 
-.menu-header{
-	padding: 10px;
+.interaction-items li:hover {
+  background-color: var(--li-hover-bg-clr);
+  color: var(--li-hover-clr);
 }
 
-.actions-item #text{
-	pointer-events: none;
+.menu-header {
+  padding: 10px;
 }
 
+.actions-item #text {
+  pointer-events: none;
+}

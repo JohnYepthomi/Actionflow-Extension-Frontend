@@ -1,0 +1,70 @@
+.mt {
+  margin-top: 10px;
+}
+
+.mb {
+  margin-bottom: 10px;
+}
+
+.mt-1 {
+  margin-top: 3px;
+}
+
+.mb-1 {
+  margin-bottom: 3px;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.flex-row {
+  display: flex;
+  gap: 7px;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.padding-all {
+  padding: 10px;
+}
+
+.fw-bold {
+  font-weight: bold;
+}
+
+.fs-lg {
+  font-size: 0.85rem;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.fs-sm {
+  font-size: 0.65rem;
+}
+
+.fs-md {
+  font-size: 0.85rem;
+}
+
+.fs-lg {
+  font-size: 1rem;
+}
+
+.txt-clr {
+  color: var(--li-child-text-clr);
+}

@@ -16,7 +16,7 @@ function renderChunks(deps){
 export default defineConfig({
   plugins: [react()],
   build: {
-    sourcemap: false,
+    sourcemap: true,
     outDir: "../Actionflow Extension/dist",
     rollupOptions: {
       output: {

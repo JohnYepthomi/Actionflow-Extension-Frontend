@@ -1,0 +1,21 @@
+.operator-view-inner {
+  position: relative;
+}
+
+.operator-view-inner::before {
+  content: "";
+  border-right: 4px solid rgb(40, 37, 37);
+  position: absolute;
+  height: 17px;
+  left: 26px;
+  top: -17px;
+}
+
+.operator-view-inner::after {
+  content: "";
+  position: absolute;
+  border-right: 4px solid rgb(40, 37, 37);
+  height: 15px;
+  left: 26px;
+  top: 17px;
+}
