@@ -1,0 +1,12 @@
+.activetab-label {
+  color: white;
+  white-space: nowrap;
+}
+
+.activetab-title {
+  text-overflow: ellipsis;
+  color: lightgray;
+  overflow: hidden;
+  width: 35vw;
+  white-space: nowrap;
+}

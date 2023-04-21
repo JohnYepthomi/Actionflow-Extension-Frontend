@@ -1,5 +1,46 @@
+/* --------------- Width - Height ------------ */
+
+.w-100 {
+  width: 100%;
+}
+
+/* --------------- Flex Start ------------ */
+
+.flex-row {
+  display: flex;
+  gap: 7px;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.gap-1 {
+  gap: 5px;
+}
+
+/* -------------- Margin ------------- */
+
 .mt {
   margin-top: 10px;
+}
+
+.mt-5{
+  margin-top: 20px;
 }
 
 .mb {
@@ -14,32 +55,17 @@
   margin-bottom: 3px;
 }
 
-.w-100 {
-  width: 100%;
-}
+/* -------------- Padding ------------- */
 
-.flex-column {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.flex-row {
-  display: flex;
-  gap: 7px;
-}
-
-.align-center {
-  align-items: center;
-}
-
-.justify-center {
-  justify-content: center;
-}
-
-.padding-all {
+.p-2 {
   padding: 10px;
 }
+
+.p-1 {
+  padding: 5px;
+}
+
+/* -------------- Font ------------- */
 
 .fw-bold {
   font-weight: bold;
@@ -47,10 +73,6 @@
 
 .fs-lg {
   font-size: 0.85rem;
-}
-
-.flex-1 {
-  flex: 1;
 }
 
 .fs-sm {
@@ -68,3 +90,5 @@
 .txt-clr {
   color: var(--li-child-text-clr);
 }
+
+/* -------------------------------- */

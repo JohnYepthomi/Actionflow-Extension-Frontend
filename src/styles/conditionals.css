@@ -1,5 +1,11 @@
 .operator-view-inner {
   position: relative;
+  width: 50px;
+  border-radius: 3px;
+  font-size: 0.59rem;
+  font-weight: bold;
+  padding: 2px;
+  border: 2px solid rgb(40, 37, 37);
 }
 
 .operator-view-inner::before {
@@ -18,4 +24,9 @@
   height: 15px;
   left: 26px;
   top: 17px;
+}
+
+.condition-container {
+  background-color: #282525;
+  border-radius: 3px;
 }

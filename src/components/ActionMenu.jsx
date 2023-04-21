@@ -1,73 +1,17 @@
 import "../styles/actions-menu.css";
-import {
-  Interactions,
-  ActionNodeProps,
-} from "../ActionsDefinitions/definitions";
+import { InteractionDefintions } from "../ActionsDefinitions/definitions";
 import { useState } from "react";
 
-function guidGenerator() {
-  var S4 = function () {
-    return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
-  };
-  return (
-    S4() +
-    S4() +
-    "-" +
-    S4() +
-    "-" +
-    S4() +
-    "-" +
-    S4() +
-    "-" +
-    S4() +
-    S4() +
-    S4()
-  );
-}
-
-function ActionMenuCategory({ title, items, type, setActions }) {
+function MenuCategory({ title, items, type, dispatch }) {
   function handleActionClick(item) {
-    let tempState = [];
-    if (type === "Interactions") {
-      const props = {
-        Common: ActionNodeProps["Common"],
-        [`${item.name}`]: ActionNodeProps[`${item.name}`],
-      };
-      tempState.push({
-        id: guidGenerator(),
-        name: item.name,
-        svg: item.svg,
-        actionType: type,
-        props,
-      });
-    } else if (type === "Conditionals") {
-      const InitialConditionOptions = {
-        type: "Element",
-        options: ["IsHidden", "IsVisible"],
-      };
-      tempState.push({
-        id: guidGenerator(),
-        name: item.name,
-        svg: item.svg,
-        actionType: type,
-        conditions: [InitialConditionOptions],
-      });
-    }
-
-    setActions((state) => [...state, ...tempState]);
+    if (type === "Interaction") dispatch({ type: "INTERACTION", item });
+    else if (type === "Conditionals") dispatch({ type: "CONDITIONALS", item });
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        with: "100%",
-      }}
-    >
+    <div className="w-100 flex-column align-center justify-center">
       <div className="action-title">{title}</div>
-      <ul className="interaction-items">
+      <ul className="interaction-items flex-row align-center justify-center gap-1">
         {items &&
           items.map((item, index) => {
             return (
@@ -82,7 +26,7 @@ function ActionMenuCategory({ title, items, type, setActions }) {
   );
 }
 
-export default function ActionMenu({ setActions }) {
+export default function ActionMenu({ dispatch }) {
   const [openMenu, setOpenMenu] = useState(false);
 
   const ConditionItems = [
@@ -138,21 +82,24 @@ export default function ActionMenu({ setActions }) {
   }
 
   return (
-    <ul className="actions-list" onClick={handleActionMenu}>
+    <ul
+      className="actions-list flex-column align-center justify-center"
+      onClick={handleActionMenu}
+    >
       <li>
-        <ActionMenuCategory
+        <MenuCategory
           title="PAGE INTERACTIONS"
-          items={Interactions}
-          type="Interactions"
-          setActions={setActions}
+          items={InteractionDefintions}
+          type="Interaction"
+          dispatch={dispatch}
         />
       </li>
       <li>
-        <ActionMenuCategory
+        <MenuCategory
           title="CONDITIONALS"
           items={ConditionItems}
           type="Conditionals"
-          setActions={setActions}
+          dispatch={dispatch}
         />
       </li>
     </ul>

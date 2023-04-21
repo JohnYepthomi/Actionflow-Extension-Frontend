@@ -1,4 +1,4 @@
-export let Interactions = [
+export let InteractionDefintions = [
   {
     svg: () => (
       <svg

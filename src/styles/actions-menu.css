@@ -1,9 +1,3 @@
-body {
-  font-family: ubuntu;
-  margin: 0;
-  background-color: var(--body-bg-clr);
-}
-
 .action-title {
   font-size: 0.78rem;
   font-weight: bold;
@@ -22,10 +16,6 @@ ul {
 }
 
 .actions-list {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
   gap: 30px;
   position: absolute;
   top: 0;
@@ -61,11 +51,7 @@ ul {
 }
 
 .interaction-items {
-  display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
 }
 
 .interaction-items li {
@@ -88,12 +74,4 @@ ul {
 .interaction-items li:hover {
   background-color: var(--li-hover-bg-clr);
   color: var(--li-hover-clr);
-}
-
-.menu-header {
-  padding: 10px;
-}
-
-.actions-item #text {
-  pointer-events: none;
 }

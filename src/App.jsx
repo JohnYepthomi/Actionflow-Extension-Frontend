@@ -1,4 +1,4 @@
-import Workflow from "./components/Workflow";
+import Workflow from "./templates/Workflow";
 import "./App.css";
 
 function App() {
