@@ -25,6 +25,14 @@
   justify-content: center;
 }
 
+.justify-start {
+  justify-content: flex-start;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
 .flex-1 {
   flex: 1;
 }
@@ -39,7 +47,7 @@
   margin-top: 10px;
 }
 
-.mt-5{
+.mt-5 {
   margin-top: 20px;
 }
 

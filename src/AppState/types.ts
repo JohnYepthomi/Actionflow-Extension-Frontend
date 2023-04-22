@@ -10,7 +10,7 @@ export type ActionEventTypes =
   | "Upload"
   | "Code"
   | "Prompts";
-export type ActionTypes = "Interaction" | "Conditions";
+export type TActionTypes = "INTERACTION" | "CONDITIONALS";
 export type CommonProp = {
   nodeName: string;
   selector: string;
@@ -25,14 +25,33 @@ export type AllActionProps = ActionClickProp;
 export type TAction = {
   id: string;
   event: ActionEventTypes;
-  actionType: ActionTypes;
-  props: AllActionProps;
+  actionType: TActionTypes;
+  svg: SvgInHtml;
+  recorded?: boolean;
+  props?: AllActionProps;
+  conditions?: TCondition[];
 };
 
-export type TUpdateCondition = {
+type SvgInHtml = HTMLElement & SVGElement;
+
+export type TUpdateConditionEventPayload = {
   type: "UPDATE_CONDITION";
   actionId: string;
   index: number;
   selection?: { value: string; conditionType: string; requiresCheck: boolean };
   checkValue?: string;
 };
+
+export type TCondition = {
+  selectedType: string;
+  selectedOption: string;
+  requiresCheck: boolean;
+  checkValue: null | string;
+};
+
+export type TInteractionItemPayload = {
+  name: ActionEventTypes;
+  svg: SvgInHtml;
+};
+
+export type TLocalStorageKey = "ComposeData";

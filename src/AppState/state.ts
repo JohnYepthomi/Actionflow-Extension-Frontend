@@ -1,14 +1,152 @@
 import { createMachine, assign } from "xstate";
-import { TAction, TUpdateCondition } from "./types";
+import {
+  TAction,
+  TActionTypes,
+  TCondition,
+  TInteractionItemPayload,
+  TUpdateConditionEventPayload,
+  TLocalStorageKey,
+} from "./types";
 import { ActionNodeProps } from "../ActionsDefinitions/definitions.jsx";
+import { InteractionDefintions } from "../ActionsDefinitions/definitions";
 
-function saveToStorage(context: FlowContext, event: any) {
+interface FlowContext {
+  flowActions: TAction[];
+  activeTab: string;
+}
+
+export const AppStateMachine = createMachine<FlowContext>(
+  {
+    predictableActionArguments: true,
+    id: "Actionflow",
+    initial: "idle",
+    context: {
+      flowActions: [],
+      activeTab: null,
+    },
+    states: {
+      idle: {
+        on: {
+          INTERACTION: {
+            target: "idle",
+            actions: ["newAction"],
+          },
+          CONDITIONALS: {
+            target: "idle",
+            actions: ["newAction"],
+          },
+          ADD_CONDITION_OPERATOR: {
+            target: "idle",
+            actions: ["newOperator"],
+          },
+          UPDATE_CONDITION: {
+            target: "idle",
+            actions: ["newCondition"],
+          },
+          SAVE_ACTIONS: {
+            target: "idle",
+            actions: saveToStorage,
+          },
+          UPDATE_ACTIVE_TAB: {
+            target: "idle",
+            actions: ["activeTab"],
+          },
+          RESTORE_ACTIONS: {
+            target: "idle",
+            actions: ["restore"],
+          },
+          START_RECORD: "recording",
+        },
+      },
+      recording: {
+        on: {
+          INTERACTION: {
+            target: "recording",
+            actions: ["newAction"],
+          },
+          CONDITIONALS: {
+            target: "recording",
+            actions: ["newAction"],
+          },
+          ADD_CONDITION_OPERATOR: {
+            target: "recording",
+            actions: ["newOperator"],
+          },
+          UPDATE_CONDITION: {
+            target: "recording",
+            actions: ["newCondition"],
+          },
+          SAVE_ACTIONS: {
+            target: "recording",
+            actions: saveToStorage,
+          },
+          UPDATE_ACTIVE_TAB: {
+            target: "recording",
+            actions: ["activeTab"],
+          },
+          STOP_RECORD: "idle",
+          UPDATE_RECORDED_ACTION: {
+            target: "recording",
+            actions: ["recordedAction"],
+          },
+        },
+      },
+      handleError: {
+        invoke: {
+          id: "handle-error",
+          src: (_context, event) => {
+            return new Promise((res, rej) => {
+              try {
+                handleErrors(event.data);
+                res("done");
+              } catch (err) {
+                rej(err);
+              }
+            });
+          },
+          onDone: "idle",
+          onError: "error",
+        },
+      },
+      error: {},
+    },
+  },
+  {
+    actions: {
+      newAction: assign({ flowActions: createAction }),
+      newOperator: assign({ flowActions: addConditionOperator }),
+      newCondition: assign({ flowActions: updateCondition }),
+      restore: assign({ flowActions: restoreFlowActions }),
+      activeTab: assign({ activeTab: updateActiveTab }),
+      recordedAction: assign({
+        flowActions: actionFromRecording,
+      }),
+    },
+  }
+);
+
+function actionFromRecording(context: FlowContext, event: any) {
+  const newRecordedAction = event.newRecordedAction;
+
+  // add a marker to indicate recorded action for UI
+  newRecordedAction["recorded"] = true;
+
+  // Give it an ID
+  newRecordedAction["id"] = guidGenerator();
+
+  // Append Action Icon
+  newRecordedAction["svg"] = InteractionDefintions.filter(
+    (idata) =>
+      idata.name.toLowerCase() === newRecordedAction.event.toLowerCase()
+  )[0].svg;
+
+  return [...context.flowActions, newRecordedAction as TAction];
+}
+
+function saveToStorage(context: FlowContext) {
   const { flowActions } = context;
-
-  return new Promise((resolve) => {
-    localStorage.setItem("composeData", JSON.stringify(flowActions));
-    resolve("success");
-  });
+  const storageKey: TLocalStorageKey = "ComposeData";
+  localStorage.setItem(storageKey, JSON.stringify(flowActions));
 }
 
 function guidGenerator() {
@@ -31,171 +169,102 @@ function guidGenerator() {
   );
 }
 
-function createAction(context: FlowContext, event: any) {
-  const { item } = event;
-
-  let tempState = [];
-  if (event.type === "INTERACTION") {
-    const props = {
-      Common: ActionNodeProps["Common"],
-      [`${item.name}`]: ActionNodeProps[`${item.name}`],
-    };
-    tempState.push({
-      id: guidGenerator(),
-      name: item.name,
-      svg: item.svg,
-      actionType: event.type,
-      props,
-    });
-  } else if (event.type === "CONDITIONALS") {
-    const defaultConditionOption = {
-      selectedType: "Element",
-      selectedOption: "IsVisible",
-      requiresCheck: true,
-      checkValue: null,
-    };
-    tempState.push({
-      id: guidGenerator(),
-      name: item.name,
-      svg: item.svg,
-      actionType: event.type,
-      conditions: [defaultConditionOption],
-    });
-  }
-
-  return new Promise((resolve) => {
-    resolve(tempState);
-  });
+function updateActiveTab(_context: FlowContext, event: any) {
+  return event.newTabInfo;
 }
 
-function updateCondition(context: FlowContext, event: any) {}
+function createAction(context: FlowContext, event: any) {
+  const ACTION_EVENT_TYPE: TActionTypes = event.type;
+  const { name, svg }: TInteractionItemPayload = event.item;
+  let tempState: TAction[] = [];
+
+  switch (ACTION_EVENT_TYPE) {
+    case "INTERACTION":
+      const props = {
+        ...ActionNodeProps["Common"],
+        ...ActionNodeProps[`${name}`],
+      };
+      const newInteractionAction: TAction = {
+        id: guidGenerator(),
+        event: name,
+        svg: svg,
+        actionType: event.type,
+        props,
+      };
+
+      tempState.push(newInteractionAction);
+      break;
+
+    case "CONDITIONALS":
+      const defaultCondition: TCondition = {
+        selectedType: "Element",
+        selectedOption: "IsVisible",
+        requiresCheck: true,
+        checkValue: null,
+      };
+      const newConditionAction: TAction = {
+        id: guidGenerator(),
+        event: name,
+        svg: svg,
+        actionType: event.type,
+        conditions: [defaultCondition],
+      };
+      tempState.push(newConditionAction);
+      break;
+
+    default:
+      break;
+  }
+
+  return [...context.flowActions, ...tempState];
+}
+
+function addConditionOperator(context: FlowContext, event: any) {
+  return [
+    ...context.flowActions.map((action) => {
+      if (action.id === event.actionId) {
+        return { ...action, conditions: event.updatedConditions };
+      }
+      return action;
+    }),
+  ];
+}
+
+function updateCondition(context: FlowContext, event: any) {
+  const {
+    index,
+    actionId,
+    selection,
+    checkValue,
+  }: TUpdateConditionEventPayload = event;
+
+  return context.flowActions.map((action) => {
+    if (action.id === actionId) {
+      const updatedCond = action["conditions"].map((cond: any, idx: number) => {
+        if (idx === index && cond.type !== "Operator") {
+          if (selection) {
+            cond["selectedOption"] = selection.value;
+            cond["selectedType"] = selection.conditionType;
+            cond["requiresCheck"] = selection.requiresCheck;
+          } else if (checkValue) {
+            cond["checkValue"] = checkValue;
+          }
+        }
+        return cond;
+      });
+      return { ...action, conditions: updatedCond };
+    }
+
+    return action;
+  });
+}
 
 function handleErrors(error: any) {
   console.log(error);
 }
 
-function restoreFlowActions() {
-  return new Promise((resolve) => {
-    const prevActions = localStorage.getItem("composeData");
-    resolve(prevActions ? JSON.parse(prevActions) : []);
-  });
+function restoreFlowActions(context: FlowContext, event: any) {
+  const storageKey: TLocalStorageKey = "ComposeData";
+  const prevActions = localStorage.getItem(storageKey);
+  return prevActions ? JSON.parse(prevActions) : [];
 }
-
-interface FlowContext {
-  flowActions: TAction[];
-}
-
-export const AppStateMachine = createMachine<FlowContext>({
-  predictableActionArguments: true,
-  id: "Actionflow",
-  initial: "idle",
-  context: {
-    flowActions: [],
-  },
-  states: {
-    idle: {},
-    createAction: {
-      invoke: {
-        id: "create-action",
-        src: createAction,
-        onDone: {
-          target: "idle",
-          actions: assign({
-            flowActions: (context, event) => [
-              ...context.flowActions,
-              ...event.data,
-            ],
-          }),
-        },
-        onError: "error",
-      },
-    },
-    save: {
-      invoke: {
-        id: "saving-to-storage",
-        src: saveToStorage,
-        onDone: "idle",
-        onError: "handleError",
-      },
-    },
-    restoreActions: {
-      invoke: {
-        id: "restore-actions",
-        src: restoreFlowActions,
-        onDone: {
-          target: "idle",
-          actions: assign({
-            flowActions: (context, event) => [
-              ...context.flowActions,
-              event.data,
-            ],
-          }),
-        },
-        onError: "handleError",
-      },
-    },
-    handleError: {
-      invoke: {
-        id: "handle-error",
-        src: (_context, event) => {
-          return new Promise((res, rej) => {
-            try {
-              handleErrors(event.data);
-              res("done");
-            } catch (err) {
-              rej(err);
-            }
-          });
-        },
-        onDone: "idle",
-        onError: "error",
-      },
-    },
-    error: {},
-  },
-  on: {
-    INTERACTION: ".createAction",
-    CONDITIONALS: ".createAction",
-    ADD_CONDITION_OPERATOR: {
-      target: ".idle",
-      actions: assign({
-        flowActions: (context, event) => [
-          ...context.flowActions.map((action) => {
-            if (action.id === event.actionId) {
-              return { ...action, conditions: event.updatedConditions };
-            }
-            return action;
-          }),
-        ],
-      }),
-    },
-    UPDATE_CONDITION: {
-      target: "idle",
-      actions: assign({
-        flowActions: (context: FlowContext, event: TUpdateCondition) => {
-          return context.flowActions.map((action) => {
-            if (action.id === event.actionId) {
-              const updatedCond = action["conditions"].map(
-                (cond: any, idx: number) => {
-                  if (idx === event.index && cond.type !== "Operator") {
-                    if (event.selection) {
-                      cond["selectedOption"] = event.selection.value;
-                      cond["selectedType"] = event.selection.conditionType;
-                      cond["requiresCheck"] = event.selection.requiresCheck;
-                    } else if (event.checkValue) {
-                      cond["checkValue"] = event.checkValue;
-                    }
-
-                    return cond;
-                  } else return cond;
-                }
-              );
-              return { ...action, conditions: updatedCond };
-            } else return action;
-          });
-        },
-      }),
-    },
-    RESTORE: ".restoreActions",
-  },
-});

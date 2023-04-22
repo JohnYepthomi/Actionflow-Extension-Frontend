@@ -5,18 +5,17 @@ import {
   ActiveTab,
   RecordingButton,
 } from "../components";
-import { useState, useEffect } from "react";
-import { InteractionDefintions } from "../ActionsDefinitions/definitions";
-import messageTab from "../utils/messageTab";
-import "../styles/workflow.css";
+import { useEffect } from "react";
 import { useMachine } from "@xstate/react";
 import { AppStateMachine } from "../AppState/state.js";
+import messageTab from "../utils/messageTab";
+import "../styles/workflow.css";
 
 function Action({ actions, dispatch }) {
   if (!actions) return;
 
   function toggleActionDetails(e) {
-    e.preventDefault();
+    // e.preventDefault();
 
     if (!e.currentTarget.classList.contains("action-header")) return;
 
@@ -34,18 +33,25 @@ function Action({ actions, dispatch }) {
   return actions.map((action, index) => {
     return (
       <li key={index}>
-        <div className="action-header" onClick={toggleActionDetails}>
-          <input type="checkbox" id="accept" name="accept" value="yes" />
-          <div className="flex-row align-center justify-center gap-1 caption">
+        <div className="action-header gap-1" onClick={toggleActionDetails}>
+          <input
+            type="checkbox"
+            id="accept"
+            name="accept"
+            value="yes"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div className="flex-row align-center justify-start gap-1 caption">
             <div className="flex-row align-center justify-center">
               {action.svg()}
             </div>
-            <div className="name">{action.name}</div>
+            <div className="name">{action.event}</div>
+            {action?.recorded && <div className="recorded-marker">REC</div>}
           </div>
         </div>
         <div className="action-details flex-column p-2">
           {action.actionType === "INTERACTION" ? (
-            <Interaction actionName={action.name} actionProps={action.props} />
+            <Interaction actionName={action.event} actionProps={action.props} />
           ) : (
             <Conditionals
               conditionType="IF"
@@ -61,14 +67,12 @@ function Action({ actions, dispatch }) {
 }
 
 export default function Workflow() {
-  const [actions, setActions] = useState([]);
-  const [activeTab, setActiveTab] = useState();
   const [current, send] = useMachine(AppStateMachine, { devTools: true });
-  const { flowActions } = current.context;
+  const { flowActions, activeTab } = current.context;
 
   useEffect(() => {
     try {
-      handleChromeRuntimeMessages(setActions);
+      handleChromeRuntimeMessages();
       getRecordingStatus();
       getCurentActiveTab();
     } catch (err) {
@@ -85,50 +89,19 @@ export default function Workflow() {
     }
   }
 
-  function guidGenerator() {
-    var S4 = function () {
-      return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
-    };
-    return (
-      S4() +
-      S4() +
-      "-" +
-      S4() +
-      "-" +
-      S4() +
-      "-" +
-      S4() +
-      "-" +
-      S4() +
-      S4() +
-      S4()
-    );
-  }
-
-  function handleChromeRuntimeMessages(setActions) {
+  function handleChromeRuntimeMessages() {
     console.log("handleChromeRuntimeMessages called");
 
-    chrome.runtime.onMessage.addListener(async function (
-      request,
-      _sender,
-      _sendResponse
-    ) {
+    chrome.runtime.onMessage.addListener(async function (request) {
       if (request.status === "new-recorded-action") {
-        const newRecordedAction = request.payload;
-        console.log({ newRecordedAction });
-        // Give it an ID
-        newRecordedAction["id"] = guidGenerator();
-
-        // Append Action Icon
-        newRecordedAction["svg"] = InteractionDefintions.filter(
-          (idata) =>
-            idata.name.toLowerCase() === newRecordedAction.name.toLowerCase()
-        )[0].svg;
-        setActions((state) => (state = [...state, newRecordedAction]));
+        send({
+          type: "UPDATE_RECORDED_ACTION",
+          newRecordedAction: request.payload,
+        });
       }
 
       if (request.status === "current-recording-status") {
-        setIsRecording((state) => (state = request.payload));
+        send({ type: request.payload ? "START_RECORD" : "STOP_RECORD" });
       }
     });
   }
@@ -142,31 +115,30 @@ export default function Workflow() {
       });
     }
 
-    chrome.storage.onChanged.addListener((changes, namespace) => {
+    chrome.storage.onChanged.addListener((changes, _namespace) => {
       for (let [key, { _oldValue, newValue }] of Object.entries(changes)) {
         if (key === "lastActiveTabData") {
-          setActiveTab((state) => (state = newValue));
+          send({ type: "UPDATE_ACTIVE_TAB", newTabInfo: newValue });
         }
       }
     });
 
     const lasActiveData = await asyncStorageGet("lastActiveTabData");
-    if (lasActiveData) setActiveTab((state) => (state = lasActiveData));
+    if (lasActiveData)
+      send({ type: "UPDATE_ACTIVE_TAB", newTabInfo: lasActiveData });
   }
 
   return (
-    current.matches("idle") && (
-      <div className="workflow-container flex-column align-center justify-content gap-1">
-        <ActionMenu dispatch={send} />
-        {activeTab && <ActiveTab currentTab={activeTab} />}
-        <RecordingButton />
-        <div className="workflow-label">WORKFLOWS</div>
-        {
-          <ul className="workflow-ul">
-            <Action actions={flowActions} dispatch={send} />
-          </ul>
-        }
-      </div>
-    )
+    <div className="workflow-container flex-column align-center justify-content gap-1">
+      <ActionMenu dispatch={send} />
+      {activeTab && <ActiveTab currentTab={activeTab} />}
+      <RecordingButton state={current} dispatch={send} />
+      <div className="workflow-label">WORKFLOWS</div>
+      {
+        <ul className="workflow-ul">
+          <Action actions={flowActions} dispatch={send} />
+        </ul>
+      }
+    </div>
   );
 }

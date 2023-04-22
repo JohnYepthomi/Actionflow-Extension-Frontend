@@ -116,3 +116,14 @@ input {
   border-radius: 3px;
   padding: 3px;
 }
+
+.recorded-marker {
+  font-size: 0.45rem;
+  color: #fff;
+  background-color: red;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}

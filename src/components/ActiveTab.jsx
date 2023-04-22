@@ -1,4 +1,5 @@
 import "../styles/activetab.css";
+import GlobeIcon from "../assets/globe.svg";
 
 export default function ActiveTab({ currentTab }) {
   return (
@@ -7,7 +8,7 @@ export default function ActiveTab({ currentTab }) {
 
       <div className="flex-row align-center -justify-center gap-1 p-1">
         <img
-          src={currentTab.icon}
+          src={currentTab.icon ?? GlobeIcon}
           alt="Active Tab favicon"
           width="15px"
           height="15px"
