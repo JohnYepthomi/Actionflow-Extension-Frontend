@@ -4,73 +4,22 @@ import {
   Conditionals,
   ActiveTab,
   RecordingButton,
+  Actions
 } from "../components";
-import { useEffect } from "react";
 import { useMachine } from "@xstate/react";
 import { AppStateMachine } from "../AppState/state.js";
+import { useRef, useEffect, memo, useState } from "react";
 import messageTab from "../utils/messageTab";
+import messageBackground from "../utils/messageBackground";
 import "../styles/workflow.css";
 
-function Action({ actions, dispatch }) {
-  if (!actions) return;
-
-  function toggleActionDetails(e) {
-    // e.preventDefault();
-
-    if (!e.currentTarget.classList.contains("action-header")) return;
-
-    const actionHeaderEl = e.currentTarget;
-    const actionDetailsEl =
-      actionHeaderEl.parentElement.querySelector(".action-details");
-    const display = actionDetailsEl.style.display;
-    if (display === "" || display === "flex") {
-      actionDetailsEl.style.display = "none";
-    } else {
-      actionDetailsEl.style.display = "flex";
-    }
-  }
-
-  return actions.map((action, index) => {
-    return (
-      <li key={index}>
-        <div className="action-header gap-1" onClick={toggleActionDetails}>
-          <input
-            type="checkbox"
-            id="accept"
-            name="accept"
-            value="yes"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <div className="flex-row align-center justify-start gap-1 caption">
-            <div className="flex-row align-center justify-center">
-              {action.svg()}
-            </div>
-            <div className="name">{action.event}</div>
-            {action?.recorded && <div className="recorded-marker">REC</div>}
-          </div>
-        </div>
-        <div className="action-details flex-column p-2">
-          {action.actionType === "INTERACTION" ? (
-            <Interaction actionName={action.event} actionProps={action.props} />
-          ) : (
-            <Conditionals
-              conditionType="IF"
-              actions={actions}
-              actionId={action.id}
-              dispatch={dispatch}
-            />
-          )}
-        </div>
-      </li>
-    );
-  });
-}
-
-export default function Workflow() {
-  const [current, send] = useMachine(AppStateMachine, { devTools: true });
+const Workflow = () => {
+  const [current, send] = useMachine(AppStateMachine);
   const { flowActions, activeTab } = current.context;
+  const actionListRef = useRef();
 
   useEffect(() => {
+    localStorage.setItem("isComposeCompleted", "false");
     try {
       handleChromeRuntimeMessages();
       getRecordingStatus();
@@ -81,12 +30,37 @@ export default function Workflow() {
     }
   }, []);
 
+  function debounce(fn, ms) {
+    let timer
+    return _ => {
+      clearTimeout(timer)
+      timer = setTimeout(_ => {
+        timer = null
+        fn.apply(this, arguments)
+      }, ms)
+    };
+  }
+
   async function getRecordingStatus() {
     try {
-      await messageTab("get-recording-status");
+      const response = await messageBackground({ message: "bg-recording-status" });
+      if(response.recording){
+        send({ type: response.recording ? "START_RECORD" : "STOP_RECORD" });
+      }
     } catch (err) {
       console.log(err);
     }
+  }
+
+  async function handleComposeFinish() {
+    const composeData = localStorage.getItem("composeData");
+    localStorage.setItem("isComposeCompleted", "true");
+
+    if (composeData)
+      await messageTab({
+        status: "compose-completed",
+        payload: JSON.parse(composeData),
+      });
   }
 
   function handleChromeRuntimeMessages() {
@@ -94,15 +68,51 @@ export default function Workflow() {
 
     chrome.runtime.onMessage.addListener(async function (request) {
       if (request.status === "new-recorded-action") {
-        send({
-          type: "UPDATE_RECORDED_ACTION",
-          newRecordedAction: request.payload,
-        });
+        
+        if(request.actionType === "Click"){
+          send({
+            type: "TAB_ACTIONS",
+            actionType: request.actionType,
+            payload: request.payload,
+          });
+        }
+
+        else if(request.actionType === "SelectTab"){
+         send({
+            type: "TAB_ACTIONS",
+            actionType: request.actionType,
+            payload: request.payload,
+          }); 
+        }  
+
+        else if(request.actionType === "Navigate"){
+          send({
+            type: "TAB_ACTIONS",
+            actionType: request.actionType,
+            payload: request.payload,
+          });
+        }
+
+        else if(request.actionType === "NewTab"){
+         send({
+            type: "TAB_ACTIONS",
+            actionType: request.actionType,
+            payload: request.payload,
+          }); 
+        }
+
+        else if(request.actionType === "CloseTab"){
+         send({
+            type: "TAB_ACTIONS",
+            actionType: request.actionType,
+            payload: request.payload,
+          }); 
+        }        
       }
 
-      if (request.status === "current-recording-status") {
-        send({ type: request.payload ? "START_RECORD" : "STOP_RECORD" });
-      }
+      // if (request.status === "current-recording-status") {
+      //   send({ type: request.payload ? "START_RECORD" : "STOP_RECORD" });
+      // }
     });
   }
 
@@ -130,15 +140,24 @@ export default function Workflow() {
 
   return (
     <div className="workflow-container flex-column align-center justify-content gap-1">
-      <ActionMenu dispatch={send} />
+      <ActionMenu dispatch={send} listRef={actionListRef}/>
       {activeTab && <ActiveTab currentTab={activeTab} />}
-      <RecordingButton state={current} dispatch={send} />
+      <RecordingButton currentTab={activeTab} state={current} dispatch={send} />
       <div className="workflow-label">WORKFLOWS</div>
-      {
-        <ul className="workflow-ul">
-          <Action actions={flowActions} dispatch={send} />
-        </ul>
-      }
+      <Actions actions={flowActions} dispatch={send} />
+      <button
+        style={{
+          backgroundColor: "orange",
+          color: "gray",
+          padding: "10px",
+          marginTop: "10px",
+        }}
+        onClick={handleComposeFinish}
+      >
+        Done
+      </button>
     </div>
   );
-}
+};
+
+export default Workflow;

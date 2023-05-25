@@ -1,3 +1,8 @@
+button:active {
+  transform: scale(0.98);
+  background-color: #2a2a2a;
+}
+
 .rec-button {
   color: white;
   background-color: red;
@@ -7,6 +12,21 @@
   border: none;
   cursor: pointer;
   width: 100px;
+  font-size: 0.71rem;
+  font-weight: bold;
+}
+
+.rec-button:disabled {
+  color: white;
+  background-color: darkgray;
+  padding: 5px;
+  outline: none;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+  width: 100px;
+  font-size: 0.71rem;
+  font-weight: bold;
 }
 
 .Rec {

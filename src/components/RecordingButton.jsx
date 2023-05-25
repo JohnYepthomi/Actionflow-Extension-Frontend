@@ -2,7 +2,7 @@ import { useState } from "react";
 import "../styles/recordingbutton.css";
 import messageTab from "../utils/messageTab";
 
-export default function RecordingButton({ state, dispatch }) {
+export default function RecordingButton({ currentTab, state, dispatch }) {
   async function handleRecord(e) {
     try {
       if (!state.matches("recording")) {
@@ -20,7 +20,7 @@ export default function RecordingButton({ state, dispatch }) {
 
   return (
     <div className="flex-row mt-5">
-      <button onClick={handleRecord} className="rec-button p-1 fw-bold">
+      <button onClick={handleRecord} className="rec-button p-1 fw-bold" disabled={ currentTab?.title ? false : true }>
         {state.matches("recording") ? "Stop Recording" : "Start Recording"}
       </button>
     </div>

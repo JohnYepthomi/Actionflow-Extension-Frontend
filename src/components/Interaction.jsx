@@ -152,17 +152,17 @@ function Code({ actionProps }){
 export default function Interaction({ actionName, actionProps }){
 	return (
 		<>
-			{ ( !["Prompts", "Code"].includes(actionName))   &&  <Common   actionProps={actionProps}/>  }
-			{ (actionName.toLowerCase() === "Code".toLowerCase())  					     &&  <Code     actionProps={actionProps}/>  }
-			{ (actionName.toLowerCase() === "Type".toLowerCase())     					 &&  <Type     actionProps={actionProps}/>  }
-			{ (actionName.toLowerCase() === "Date".toLowerCase())     					 &&  <Date     actionProps={actionProps}/>  }
-			{ (actionName.toLowerCase() === "Click".toLowerCase())    					 &&  <Click    actionProps={actionProps}/>  }
-			{ (actionName.toLowerCase() === "Hover".toLowerCase())    					 &&  <Hover    actionProps={actionProps}/>  }
-			{ (actionName.toLowerCase() === "Scroll".toLowerCase())   				   &&  <Scroll   actionProps={actionProps}/>  }
-			{ (actionName.toLowerCase() === "Upload".toLowerCase())   					 &&  <Upload   actionProps={actionProps}/>  }
-			{ (actionName.toLowerCase() === "Select".toLowerCase())   					 &&  <Select   actionProps={actionProps}/>  }
-			{ (actionName.toLowerCase() === "Prompts".toLowerCase())  					 &&  <Prompts  actionProps={actionProps}/>  }
-			{ (actionName.toLowerCase() === "Keypress".toLowerCase()) 					 &&  <Keypress actionProps={actionProps}/>  }
+			{ ( !["Prompts", "Code"].includes(actionName))            && <Common   actionProps={actionProps}/>  }
+			{ (actionName.toLowerCase() === "Code".toLowerCase())  		&& <Code     actionProps={actionProps}/>  }
+			{ (actionName.toLowerCase() === "Type".toLowerCase())     && <Type     actionProps={actionProps}/>  }
+			{ (actionName.toLowerCase() === "Date".toLowerCase())     && <Date     actionProps={actionProps}/>  }
+			{ (actionName.toLowerCase() === "Click".toLowerCase())    && <Click    actionProps={actionProps}/>  }
+			{ (actionName.toLowerCase() === "Hover".toLowerCase())    && <Hover    actionProps={actionProps}/>  }
+			{ (actionName.toLowerCase() === "Scroll".toLowerCase())   && <Scroll   actionProps={actionProps}/>  }
+			{ (actionName.toLowerCase() === "Upload".toLowerCase())   && <Upload   actionProps={actionProps}/>  }
+			{ (actionName.toLowerCase() === "Select".toLowerCase())   && <Select   actionProps={actionProps}/>  }
+			{ (actionName.toLowerCase() === "Prompts".toLowerCase())  && <Prompts  actionProps={actionProps}/>  }
+			{ (actionName.toLowerCase() === "Keypress".toLowerCase()) && <Keypress actionProps={actionProps}/>  }
 		</>
 	);
 }

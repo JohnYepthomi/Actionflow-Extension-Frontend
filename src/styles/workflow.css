@@ -44,6 +44,29 @@ body {
   width: 100%;
 }
 
+[data-action-type="IF"]:after {
+  content: "";
+  position: absolute;
+  top: 39px;
+  left: 2px;
+  border-left: 1px solid #545353;
+  border-bottom: 1px solid #545353;
+  width: 20px;
+  height: 33px;
+}
+
+[data-action-type="END"]:after {
+  content: "";
+  position: absolute;
+  top: -34px;
+  left: 2px;
+  border-left: 1px solid #545353;
+  border-top: 1px solid #545353;
+  width: 15px;
+  height: 33px;
+}
+
+
 .workflow-ul li {
   /*	visibility: hidden;*/
   width: 100%;
@@ -60,7 +83,7 @@ body {
   display: flex;
   align-items: center;
   /*	justify-content: center;*/
-  /*	height: 25px;*/
+  height: 30px;
   padding: 5px 5px 5px 5px;
   text-align: center;
   border-radius: 0 3px 3px 0px;
@@ -89,8 +112,7 @@ body {
   border-radius: 0 0 3px 3px;
 }
 
-button,
-input[type="submit"],
+button,input[type="submit"],
 input[type="reset"] {
   background-color: #282525;
   color: inherit;
@@ -103,11 +125,6 @@ input[type="reset"] {
   cursor: pointer;
   border-radius: 3px;
   outline: inherit;
-}
-
-button:active {
-  transform: scale(0.98);
-  background-color: #2a2a2a;
 }
 
 input {

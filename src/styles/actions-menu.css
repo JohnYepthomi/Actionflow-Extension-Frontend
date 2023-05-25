@@ -17,7 +17,7 @@ ul {
 
 .actions-list {
   gap: 30px;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: -300px;
   bottom: 0;

@@ -29,7 +29,7 @@ export default function Conditionals({
   }
 
   return (
-    <div className="action-details flex-column p-2">
+    <>
       <ConditionItems
         actions={actions}
         actionId={actionId}
@@ -57,7 +57,7 @@ export default function Conditionals({
           + OR
         </button>
       </div>
-    </div>
+    </>
   );
 }
 

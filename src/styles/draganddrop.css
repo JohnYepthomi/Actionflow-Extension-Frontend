@@ -1,0 +1,25 @@
+.moved-down {
+  animation: move-down 0.3s ease;
+}
+
+@keyframes move-down {
+  from {
+    transform: translateY(-20px);
+  }
+  to {
+    transform: translateY(0px);
+  }
+}
+
+.move-up {
+  animation: move-up 0.3s ease;
+}
+
+@keyframes move-up {
+  0% {
+    transform: translateY(20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}

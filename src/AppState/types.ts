@@ -1,5 +1,4 @@
 export type ActionEventTypes =
-  | "Common"
   | "Click"
   | "Scroll"
   | "Keypress"
@@ -9,8 +8,17 @@ export type ActionEventTypes =
   | "Date"
   | "Upload"
   | "Code"
-  | "Prompts";
-export type TActionTypes = "INTERACTION" | "CONDITIONALS";
+  | "Prompts"
+  | "IF"
+  | "WHILE"
+  | "END"
+  | "ELSE"
+  | "BREAK"
+  | "SelectTab"
+  | "NewTab"
+  | "CloseTab"
+  | "Visit"
+
 export type CommonProp = {
   nodeName: string;
   selector: string;
@@ -20,19 +28,25 @@ export type ClickProp = {
   "Wait For File Download": boolean;
   Description: string;
 };
+export type SelectTabProp = {
+  url: string;
+  id: string;
+};
 export type ActionClickProp = CommonProp & ClickProp;
-export type AllActionProps = ActionClickProp;
+export type ActionSelectTabProp = SelectTabProp;
+export type AllActionProps = ActionClickProp | ActionSelectTabProp;
 export type TAction = {
   id: string;
-  event: ActionEventTypes;
-  actionType: TActionTypes;
+  // event: ActionEventTypes;
+  actionType: ActionEventTypes;
   svg: SvgInHtml;
   recorded?: boolean;
   props?: AllActionProps;
+  nestingLevel: number;
   conditions?: TCondition[];
 };
 
-type SvgInHtml = HTMLElement & SVGElement;
+export type SvgInHtml = HTMLElement & SVGElement;
 
 export type TUpdateConditionEventPayload = {
   type: "UPDATE_CONDITION";
@@ -54,4 +68,4 @@ export type TInteractionItemPayload = {
   svg: SvgInHtml;
 };
 
-export type TLocalStorageKey = "ComposeData";
+export type TLocalStorageKey = "composeData";
