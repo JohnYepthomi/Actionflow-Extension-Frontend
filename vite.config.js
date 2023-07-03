@@ -17,7 +17,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     sourcemap: true,
-    outDir: "../Actionflow Extension/dist",
+    outDir: "../ActionflowExtension/dist",
     rollupOptions: {
       output: {
         manualChunks: {

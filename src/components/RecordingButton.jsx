@@ -4,16 +4,17 @@ import messageTab from "../utils/messageTab";
 
 export default function RecordingButton({ currentTab, state, dispatch }) {
   async function handleRecord(e) {
+    console.log("handleRecord(e) called");
     try {
       if (!state.matches("recording")) {
-        await messageTab("start-recording");
+        await messageTab({message: "start-recording"});
         dispatch({ type: "START_RECORD" });
       } else if (state.matches("recording")) {
-        await messageTab("stop-recording");
+        await messageTab({message: "stop-recording"});
         dispatch({ type: "STOP_RECORD" });
       }
     } catch (err) {
-      console.log("Warning: Not Runnning in Chrome Extension context");
+      console.log("Warning: Possibly Not Runnning in Chrome Extension context");
       console.log(err);
     }
   }

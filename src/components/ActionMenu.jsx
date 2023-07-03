@@ -137,10 +137,10 @@ export default function ActionMenu({ dispatch }) {
         <MenuCategory
           title="TAB ACTIONS"
           items={[
-            { name: "Navigate", svg: GlobeIcon },
-            { name: "NewTab", svg: NewTabIcon },
-            { name: "SelectTab", svg: SelectTabIcon },
-            { name: "CloseTab", svg: CloseTabIcon },
+            { actionType: "Navigate", svg: GlobeIcon, payload: { url: null, tabId: null, windowId: null }},
+            { actionType: "NewTab", svg: NewTabIcon, payload: { url: null, tabId: null, windowId: null }},
+            { actionType: "SelectTab", svg: SelectTabIcon, payload: { url: null, tabId: null, windowId: null }},
+            { actionType: "CloseTab", svg: CloseTabIcon, payload: { url: null, tabId: null, windowId: null }},
           ]}
           type="TabActions"
           dispatch={dispatch}

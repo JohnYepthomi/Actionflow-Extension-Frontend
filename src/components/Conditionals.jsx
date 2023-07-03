@@ -6,26 +6,15 @@ export default function Conditionals({
   actionId,
   dispatch,
 }) {
-  const defaultConditionOption = {
+  const GeneralConditionDefaultTemplate = {
     selectedType: "Element",
     selectedOption: "IsVisible",
     requiresCheck: true,
-    checkValue: null,
+    checkValue: "",
   };
 
-  function handleOperatorClick(conditionType, operator, actionId) {
-    if (conditionType === "IF") {
-      const prevConditions = actions.filter(({ id }) => id === actionId)[0][
-        "conditions"
-      ];
-      const updatedConditions = [
-        ...prevConditions,
-        { type: "Operator", value: operator },
-        defaultConditionOption,
-      ];
-
-      dispatch({ type: "ADD_CONDITION_OPERATOR", actionId, updatedConditions });
-    }
+  function handleOperator(conditionType, operator, actionId) {
+    dispatch({ type: "ADD_CONDITION_OPERATOR", actionId, selection: operator });
   }
 
   return (
@@ -46,13 +35,13 @@ export default function Conditionals({
       <div className="flex-row align-center justify-center mt">
         <button
           className="flex-1"
-          onClick={() => handleOperatorClick(conditionType, "AND", actionId)}
+          onClick={() => handleOperator(conditionType, "AND", actionId)}
         >
           + AND
         </button>
         <button
           className="flex-1"
-          onClick={() => handleOperatorClick(conditionType, "OR", actionId)}
+          onClick={() => handleOperator(conditionType, "OR", actionId)}
         >
           + OR
         </button>
@@ -62,7 +51,7 @@ export default function Conditionals({
 }
 
 function OperatorItem({ selectedOperator }) {
-  const bg_clr = selectedOperator.value === "AND" ? "#368136" : "#a739a7";
+  const bg_clr = selectedOperator.selected === "AND" ? "#368136" : "#a739a7";
   const bg_style = { backgroundColor: bg_clr };
   return (
     <div className="flex-row align-center justify-center mt-1 mb-1">
@@ -70,14 +59,14 @@ function OperatorItem({ selectedOperator }) {
         className="operator-view-inner flex-row align-center justify-center"
         style={bg_style}
       >
-        {selectedOperator.value}
+        {selectedOperator.selected}
       </div>
     </div>
   );
 }
 
 function Condition({ condition, index, actionId, dispatch }) {
-  const AllConditions = [
+  const ConditionsOptionsTemplate = [
     {
       type: "Basic",
       options: ["is empty", "is not empty"],
@@ -92,7 +81,7 @@ function Condition({ condition, index, actionId, dispatch }) {
       type: "Text",
       options: [
         "contains",
-        "does not contain",
+        "Does not contain",
         "is exactly",
         "starts with",
         "ends with",
@@ -120,35 +109,33 @@ function Condition({ condition, index, actionId, dispatch }) {
         <select
           onChange={(event) => {
             const { value } = event.target.selectedOptions;
-            const conditionType =
-              event.target.selectedOptions[0].getAttribute("conditionType");
-            const requiresCheck = JSON.parse(
-              event.target.selectedOptions[0].getAttribute("requiresCheck")
-            );
+            const selectedOption = event.target.selectedOptions[0].getAttribute("selectedOption");
+            const requiresCheck = JSON.parse(event.target.selectedOptions[0].getAttribute("requiresCheck"));
+            const conditionType = ConditionsOptionsTemplate.filter(cot => cot.options.includes(selectedOption))[0].type;
 
             dispatch({
               type: "UPDATE_CONDITION",
               actionId,
               index,
-              selection: { value, conditionType, requiresCheck },
+              selection: { value, conditionType, selectedOption, requiresCheck },
             });
           }}
         >
-          {AllConditions &&
-            AllConditions.map((cond) => {
+          {ConditionsOptionsTemplate &&
+            ConditionsOptionsTemplate.map((conditionTemplate) => {
               return (
-                <optgroup label={cond.type}>
-                  {cond.options &&
-                    cond.options.map((value) => (
+                <optgroup label={conditionTemplate.type}>
+                  {conditionTemplate.options &&
+                    conditionTemplate.options.map((option) => (
                       <option
-                        value={value}
-                        conditionType={cond.type}
-                        requiresCheck={JSON.stringify(cond.requiresCheck)}
+                        value={option}
+                        selectedOption={option}
+                        requiresCheck={JSON.stringify(conditionTemplate.requiresCheck)}
                         selected={
-                          value === condition.selectedOption ? "selected" : ""
+                          option === condition.selectedOption ? "selected" : ""
                         }
                       >
-                        {value}
+                        {option}
                       </option>
                     ))}
                 </optgroup>

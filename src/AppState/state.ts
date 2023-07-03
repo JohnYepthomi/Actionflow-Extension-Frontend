@@ -1,9 +1,17 @@
 import { createMachine, assign } from "xstate";
 import {
   TAction,
-  TCondition,
-  TInteractionItemPayload,
-  TUpdateConditionEventPayload,
+  IntAction,
+  TabAction,
+  CondAction,
+  SelectableConditions,
+  GeneralCondition,
+  TInteractionPayload,
+  TConditionalPayload,
+  TConditionalUpdatePayload,
+  ActionEventTypes,
+  CondEventTypes,
+  CondEndEventTypes,
   TLocalStorageKey,
 } from "./types";
 import { ActionNodeProps } from "../ActionsDefinitions/definitions.jsx";
@@ -27,6 +35,9 @@ const commonEvents = {
   },
   UPDATE_CONDITION: {
     actions: ["newCondition", "saveToStorage"],
+  },
+  TAB_ACTIONS_UPDATE: {
+    actions: ["updateTab", "saveToStorage"],
   },
   UPDATE_ACTIVE_TAB: {
     actions: ["activeTab"],
@@ -64,7 +75,10 @@ export const AppStateMachine = createMachine<FlowContext>(
       recording: {
         on: {
           ...commonEvents,
-          TAB_ACTIONS: {
+          RECORDED_INTERACTION : {
+            actions: ["recordedAction", "saveToStorage"],
+          },
+          RECORDED_TAB_ACTION: {
             actions: ["recordedAction", "saveToStorage"],
           },
           STOP_RECORD: {
@@ -106,81 +120,67 @@ export const AppStateMachine = createMachine<FlowContext>(
       recordedAction: assign({ flowActions: actionFromRecording }),
       saveToStorage: saveToStorage,
       handleActionSort:  assign({ flowActions: itemReposition }),
-      resolveNesting: assign({flowActions: evauateNesting})
+      resolveNesting: assign({flowActions: evauateNesting}),
+      updateTab: assign({flowActions: updateTabAction}),
     },
   }
 );
 
+function updateTabAction(context: FlowContext, event: any){
+  return context.flowActions.map( act => {
+    if(act.id === event.updated_action.id)
+      return event.updated_action;
+    else return act;
+  });
+}
+
 function actionFromRecording(context: FlowContext, event: any) {
   console.log("actionFromRecording");
-  const aType = event.actionType ? event.actionType : event.item.name;
+  const actionType = event.actionType;
+  let currentAction = null;
 
-  switch (aType) {
-    case "Click":
-      console.log('event.actionType === "Click"');
-      const action = event.payload;
-      action["recorded"] = true;
-      action["id"] = guidGenerator();
-      action["svg"] = InteractionDefintions.filter(
+  if(["Click", "Type", "Keypress", "Select", "Hover", "Prompts"].includes(actionType))
+    currentAction = "INT_ACTION";
+  if(["SelectTab", "SelectWindow", "Navigate", "NewTab", "NewWindow", "CloseTab", "CloseWindow", "Back", "Forward"].includes(actionType))
+    currentAction = "TAB_ACTION";
+
+  switch (currentAction) {
+    case "INT_ACTION":
+      const int_action = event.payload;
+      int_action["recorded"] = true;
+      int_action["id"] = guidGenerator();
+      int_action["svg"] = InteractionDefintions.filter(
         (idata) =>
-          idata.name.toLowerCase() === action.actionType.toLowerCase()
+          idata.name.toLowerCase() === int_action.actionType.toLowerCase()
       )[0].svg;
-      action["nestingLevel"] = 0;
-      return [...context.flowActions, action as TAction];
+      int_action["nestingLevel"] = 0;
+      return [...context.flowActions, int_action as IntAction];
       break;
 
-    case "SelectTab":
-      console.log('event.actionType === "SelectTab"');
-      const select_action = {};
-      select_action["actionType"] = "SelectTab";
-      select_action["recorded"] = true;
-      select_action["id"] = guidGenerator();
-      select_action["svg"] = InteractionDefintions.filter(
-        (idata) =>
-          idata.name.toLowerCase() === "click"
-      )[0].svg;
-      select_action["nestingLevel"] = 0;
-      return [...context.flowActions, select_action as TAction];
-      break;
+    case "TAB_ACTION":
+      const { url, tabId, windowId } = event.payload;
+      const prevActions = context.flowActions;
+      const prevNewTabAction = prevActions[prevActions.length - 1] as TabAction;
+      const isLastNewTabAction = prevActions.length > 0 && prevNewTabAction.actionType === "NewTab" && prevNewTabAction.url === "chrome://new-tab-page/";
+      const isNavigate = actionType === "Navigate";
 
-    case "Navigate":
-      console.log('event.actionType === "Navigate"');
-      console.log(event);
-      const visit_action = {};
-      visit_action["actionType"] = "Navigate";
-      visit_action["recorded"] = true;
-      visit_action["id"] = guidGenerator();
-      visit_action["svg"] = GlobeIcon;
-      visit_action["nestingLevel"] = 0;
-      return [...context.flowActions, visit_action as TAction];
-      break;
+      if(isLastNewTabAction && isNavigate){
+        prevNewTabAction.url = url;
+        return [...prevActions.filter( ac => ac.id !== prevNewTabAction.id), prevNewTabAction]
+      }
 
-    case "NewTab":
-      console.log('event.actionType === "NewTab"');
-      const newtab_action = {};
-      newtab_action["actionType"] = "NewTab";
-      newtab_action["recorded"] = true;
-      newtab_action["id"] = guidGenerator();
-      newtab_action["svg"] = InteractionDefintions.filter(
+      const tab_action = {};
+      tab_action["id"] = guidGenerator();
+      tab_action["actionType"] = event.actionType;
+      tab_action["nestingLevel"] = 0;
+      tab_action["url"] = url;
+      tab_action["svg"] = InteractionDefintions.filter(
         (idata) =>
-          idata.name.toLowerCase() === "hover"
+          idata.name.toLowerCase() === "keypress"
       )[0].svg;
-      newtab_action["nestingLevel"] = 0;
-      return [...context.flowActions, newtab_action as TAction];
-      break;
-
-    case "CloseTab":
-      console.log('event.actionType === "CloseTab"');
-      const closetab_action = {};
-      closetab_action["actionType"] = "CloseTab";
-      closetab_action["recorded"] = true;
-      closetab_action["id"] = guidGenerator();
-      closetab_action["svg"] = InteractionDefintions.filter(
-        (idata) =>
-          idata.name.toLowerCase() === "code"
-      )[0].svg;
-      closetab_action["nestingLevel"] = 0;
-      return [...context.flowActions, closetab_action as TAction];
+      tab_action["tabId"] = tabId;
+      tab_action["windowId"] = windowId;
+      return [...context.flowActions, tab_action as TabAction];
       break;
 
     default:
@@ -225,8 +225,8 @@ function updateActiveTab(_context: FlowContext, event: any) {
 function createAction(context: FlowContext, event: any) {
   console.log("createAction");
   const ACTION_EVENT_TYPE: "INTERACTION" | "CONDITIONALS" = event.type;
-  const { name, svg }: TInteractionItemPayload = event.item;
   let tempState: TAction[] = [];
+  const { name, svg } : TInteractionPayload | TConditionalPayload = event.item; // TInteractionPayload, TConditionalPayload
 
   switch (ACTION_EVENT_TYPE) {
     case "INTERACTION":
@@ -234,32 +234,30 @@ function createAction(context: FlowContext, event: any) {
         ...ActionNodeProps["Common"],
         ...ActionNodeProps[`${name}`],
       };
-      const newInteractionAction: TAction = {
+      const newInteractionAction: IntAction = {
         id: guidGenerator(),
-        // event: name,
         svg: svg,
-        actionType: name, // previous value was ACTION_EVENT_TYPE or event.type
+        actionType: name as ActionEventTypes,
+        recorded: false,
         props,
         nestingLevel: 0,
       };
-
       tempState.push(newInteractionAction);
       break;
 
     case "CONDITIONALS":
-      const defaultCondition: TCondition = {
+      const GeneralConditionDefaultTemplate : GeneralCondition = {
         selectedType: "Element",
         selectedOption: "IsVisible",
         requiresCheck: true,
         checkValue: "",
       };
-      const newConditionAction: TAction = {
+      const newConditionAction: CondAction = {
         id: guidGenerator(),
-        // event: name,
         svg: svg,
-        actionType: name, // previous value was ACTION_EVENT_TYPE or event.type
-        conditions: [defaultCondition],
+        actionType: name as CondEventTypes,
         nestingLevel: 0,
+        conditions: [ GeneralConditionDefaultTemplate ],
       };
       tempState.push(newConditionAction);
       break;
@@ -273,10 +271,25 @@ function createAction(context: FlowContext, event: any) {
 
 function addConditionOperator(context: FlowContext, event: any) {
   console.log("addConditionOperator");
+  const actionId = event.actionId;
+  const selectedOperator = event.selection;
+  const GeneralConditionDefaultTemplate : GeneralCondition = {
+    selectedType: "Element",
+    selectedOption: "IsVisible",
+    requiresCheck: true,
+    checkValue: "",
+  };
+  const prevConditions = context.flowActions.filter(({ id }) => id === actionId)[0]["conditions"];
+  const updatedConditions = [
+    ...prevConditions,
+    { type: "Operator", selected: selectedOperator },
+    GeneralConditionDefaultTemplate,
+  ];
+
   return [
     ...context.flowActions.map((action) => {
       if (action.id === event.actionId) {
-        return { ...action, conditions: event.updatedConditions };
+        return { ...action, conditions: updatedConditions };
       }
       return action;
     }),
@@ -289,19 +302,18 @@ function updateCondition(context: FlowContext, event: any) {
     index,
     actionId,
     selection,
-    checkValue,
-  }: TUpdateConditionEventPayload = event;
+  }: TConditionalUpdatePayload = event;
 
   return context.flowActions.map((action) => {
     if (action.id === actionId) {
-      const updatedCond = action["conditions"].map((cond: any, idx: number) => {
-        if (idx === index && cond.type !== "Operator") {
+      const updatedCond = action["conditions"].map((cond: SelectableConditions, idx: number) => {
+        if (idx === index) { // && cond.type !== "Operator"
           if (selection) {
-            cond["selectedOption"] = selection.value;
             cond["selectedType"] = selection.conditionType;
+            cond["selectedOption"] = selection.selectedOption;
             cond["requiresCheck"] = selection.requiresCheck;
-          } else if (checkValue) {
-            cond["checkValue"] = checkValue;
+          } else if (selection.requiresCheck && selection.value) {
+            cond["checkValue"] = selection.value;
           }
         }
         return cond;

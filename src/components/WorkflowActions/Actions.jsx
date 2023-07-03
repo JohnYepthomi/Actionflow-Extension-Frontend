@@ -69,6 +69,7 @@ const Actions = ({ actions, dispatch }) => {
   };
 
   useEffect(()=>{
+    console.log("Workflow -> Actions -> localActions: ", localActions);
     setLocalActions(state => actions);
   },[actions]);
 

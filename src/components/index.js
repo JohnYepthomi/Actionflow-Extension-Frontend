@@ -5,6 +5,7 @@ import RecordingButton from "./RecordingButton";
 import Editor from "./Editor";
 import ActiveTab from "./ActiveTab";
 import { Actions } from "./WorkflowActions";
+import TabActions from "./TabActions";
 
 export {
   ActionMenu,
@@ -13,5 +14,6 @@ export {
   ActiveTab,
   Interaction,
   Conditionals,
-  Actions
+  Actions,
+  TabActions
 };
