@@ -168,7 +168,7 @@ export const ActionNodeProps = {
   },
   Type: {
     Text: "",
-    "Overwrite existing text": false,
+    "Overwrite Existing Text": false,
   },
   Click: {
     "Wait For New Page To load": false,
@@ -176,10 +176,7 @@ export const ActionNodeProps = {
     Description: "",
   },
   Scroll: {
-    "Scroll Direction": {
-      Top: false,
-      Bottom: false,
-    },
+    Direction: ["Top", "Bottom"],
     Description: "",
   },
   Hover: {
@@ -193,7 +190,8 @@ export const ActionNodeProps = {
     "Response Text": "",
   },
   Select: {
-    Value: "",
+    Selected: "",
+    Options: [],
     Description: "",
   },
   Keypress: {

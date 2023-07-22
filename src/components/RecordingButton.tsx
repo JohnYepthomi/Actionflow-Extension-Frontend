@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "../styles/recordingbutton.css";
 import messageTab from "../utils/messageTab";
 
 export default function RecordingButton({ currentTab, state, dispatch }) {
