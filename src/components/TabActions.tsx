@@ -5,7 +5,7 @@ export default function TabActions({ action, dispatch }){
 		<div className="flex-column">
 			<div className="fw-bold txt-clr fs-md">URL</div>
 			<div className="flex-row align-center">
-				<input className="flex-1" type="text" placholder="Css Selector" value={action.url}/>
+				<input id={action.url} className="flex-1" type="text" placeholder="url" value={action.url}/>
 			</div>
 		</div>
 	);

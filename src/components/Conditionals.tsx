@@ -1,5 +1,3 @@
-import "../styles/conditionals.css";
-
 export default function Conditionals({
   conditionType,
   actions,
@@ -37,13 +35,15 @@ export default function Conditionals({
           className="flex-1"
           onClick={() => handleOperator(conditionType, "AND", actionId)}
         >
-          + AND
+          {" "}
+          + AND{" "}
         </button>
         <button
           className="flex-1"
           onClick={() => handleOperator(conditionType, "OR", actionId)}
         >
-          + OR
+          {" "}
+          + OR{" "}
         </button>
       </div>
     </>
@@ -65,8 +65,14 @@ function OperatorItem({ selectedOperator }) {
   );
 }
 
+type TConditionsOptionsTemplate = {
+  type: string;
+  options: string[];
+  requiresCheck?: Boolean;
+};
+
 function Condition({ condition, index, actionId, dispatch }) {
-  const ConditionsOptionsTemplate = [
+  const ConditionsOptionsTemplate: TConditionsOptionsTemplate[] = [
     {
       type: "Basic",
       options: ["is empty", "is not empty"],
@@ -108,34 +114,43 @@ function Condition({ condition, index, actionId, dispatch }) {
         <div className="fs-sm">{condition.selectedType}</div>
         <select
           onChange={(event) => {
-            const { value } = event.target.selectedOptions;
-            const selectedOption = event.target.selectedOptions[0].getAttribute("selectedOption");
-            const requiresCheck = JSON.parse(event.target.selectedOptions[0].getAttribute("requiresCheck"));
-            const conditionType = ConditionsOptionsTemplate.filter(cot => cot.options.includes(selectedOption))[0].type;
+            const selected_condition_value = event.target.value;
+            const selectedOption = event.target.selectedOptions[0].getAttribute("data-selected-option");
+            const requiresCheck = JSON.parse(event.target.selectedOptions[0].getAttribute("data-requires-check"));
+            const conditionType = ConditionsOptionsTemplate.filter((cot) => cot.options.includes(selectedOption))[0].type;
 
             dispatch({
               type: "UPDATE_CONDITION",
               actionId,
               index,
-              selection: { value, conditionType, selectedOption, requiresCheck },
+              selection: {
+                value: selected_condition_value,
+                conditionType,
+                selectedOption,
+                requiresCheck,
+              },
             });
           }}
         >
           {ConditionsOptionsTemplate &&
-            ConditionsOptionsTemplate.map((conditionTemplate) => {
+            ConditionsOptionsTemplate.map((cond_opts, index) => {
               return (
-                <optgroup label={conditionTemplate.type}>
-                  {conditionTemplate.options &&
-                    conditionTemplate.options.map((option) => (
+                <optgroup key={index} label={cond_opts.type}>
+                  {cond_opts.options &&
+                    cond_opts.options.map((option, optIndex) => (
                       <option
+                        key={optIndex}
                         value={option}
-                        selectedOption={option}
-                        requiresCheck={JSON.stringify(conditionTemplate.requiresCheck)}
+                        data-selected-option={option}
+                        data-requires-check={JSON.stringify(
+                          cond_opts.requiresCheck
+                        )}
                         selected={
-                          option === condition.selectedOption ? "selected" : ""
+                          option === condition.selectedOption ? true : false
                         }
                       >
-                        {option}
+                        {" "}
+                        {option}{" "}
                       </option>
                     ))}
                 </optgroup>
@@ -171,7 +186,7 @@ function ConditionItems({ actions, actionId, dispatch }) {
         actions
           .filter(({ id }) => id === actionId)[0]
           ["conditions"].map((condition, index) => (
-            <>
+            <div key={index}>
               {condition.type === "Operator" ? (
                 <OperatorItem selectedOperator={condition} />
               ) : (
@@ -182,7 +197,7 @@ function ConditionItems({ actions, actionId, dispatch }) {
                   dispatch={dispatch}
                 />
               )}
-            </>
+            </div>
           ))}
     </>
   );

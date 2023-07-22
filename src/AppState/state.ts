@@ -3,7 +3,7 @@ import {
   TAction,
   IntAction,
   TabAction,
-  CondAction,
+  ConditionalAction,
   SelectableConditions,
   GeneralCondition,
   TInteractionPayload,
@@ -13,6 +13,7 @@ import {
   CondEventTypes,
   CondEndEventTypes,
   TLocalStorageKey,
+  TClickAction,
 } from "./types";
 import { ActionNodeProps } from "../ActionsDefinitions/definitions.jsx";
 import { InteractionDefintions } from "../ActionsDefinitions/definitions";
@@ -43,22 +44,126 @@ const commonEvents = {
     actions: ["activeTab"],
   },
   DRAG_EVENT: {
-    actions: [ "handleActionSort", "resolveNesting", "saveToStorage"]
-  }
+    actions: ["handleActionSort", "resolveNesting", "saveToStorage"],
+  },
 };
 
+async function getActionsFromStore(workflowname: string, db: any) {
+  console.log("DB:", db, "workflowName: ", workflowname);
+  try {
+    const rows = await db.select("SELECT data FROM workflows WHERE name = ?", [
+      workflowname,
+    ]);
+    console.log("DB rows data: ", rows, ", for Workflow: ", workflowname);
+    if (rows && rows.length > 0) return JSON.parse(rows[0].data);
+    else return [];
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+const DB_SUB_STATE = {
+  id: "DbState",
+  states: {
+    createWorkflow: {
+      invoke: {
+        id: "invoke-createWorkflow",
+        src: (c: FlowContext, e: any) => {
+          return new Promise(async (resolve, reject) => {
+            try {
+              const create_response = await e.db.execute(
+                `CREATE TABLE IF NOT EXISTS workflows (name TEXT, data TEXT)`
+              );
+              console.log("create_response", create_response);
+              resolve(create_response);
+            } catch (error) {
+              console.log("create_table error: ", error);
+              if (error.includes("already exists")) {
+                resolve("");
+              } else reject(error);
+            }
+          });
+        },
+        onDone: "#Actionflow.idle",
+        onError: "#Actionflow.error",
+      },
+    },
+    saveWorkflow: {
+      invoke: {
+        id: "invoke-saveWorkflow",
+        src: (context: FlowContext, event: any) => {
+          return new Promise(async (resolve, reject) => {
+            try {
+              console.log(
+                `DELETING '${event.workflowName}' ROWS FROM 'WORKFLOW' TABLE IN DB...`
+              );
+              const QUERY = `DELETE FROM workflows WHERE name = '${event.workflowName}'`;
+              await event.db.execute(QUERY);
+
+              console.log("INSERTING WORKFLOW UPDATE TO DB...");
+              if (event.Workflow.length > 0)
+                await event.db.execute(
+                  `INSERT INTO workflows VALUES (?1, ?2)`,
+                  [event.workflowName, JSON.stringify(event.Workflow)]
+                );
+              resolve(event.Workflow);
+            } catch (error) {
+              console.error(error);
+              reject(error);
+            }
+          });
+        },
+        onDone: {
+          target: "#Actionflow.idle",
+          // actions: assign({ flowActions: (c, e) => e.data }),
+        },
+        onError: "#Actionflow.idle",
+      },
+    },
+    getWorkflow: {
+      invoke: {
+        id: "invoke-getWorkflow",
+        src: (context: FlowContext, event: any) => {
+          console.log("invoke-selectDb");
+          return getActionsFromStore(event.workflowName, event.db);
+        },
+        onDone: {
+          target: "#Actionflow.idle",
+          actions: assign({ flowActions: (c: FlowContext, e: any) => e.data }),
+        },
+        onError: "#Actionflow.error",
+      },
+    },
+    clearWorkflow: {
+      invoke: {
+        id: "invoke-clearWorkflow",
+        src: (c: FlowContext, e: any) => {
+          console.log(`CLEARING '${e.workflowName}' from 'WORKFLOW' TABLE`);
+          const QUERY = `DELETE FROM workflows WHERE name = '${e.workflowName}'`;
+          return e.db.execute(QUERY);
+        },
+        onDone: "#DbState.getWorkflow",
+        onError: "#Actionflow.error",
+      },
+    },
+  },
+};
 export const AppStateMachine = createMachine<FlowContext>(
   {
     predictableActionArguments: true,
     id: "Actionflow",
-    initial: "idle",
+    initial: "idle", // /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor) ? "idle" : "restoring",
     context: {
       flowActions: [],
       activeTab: null,
     },
     states: {
-      processing: {
-        on: commonEvents,
+      restoring: {
+        on: {
+          RESTORE_ACTIONS: {
+            target: "#DbState.getWorkflow",
+          },
+        },
       },
       idle: {
         on: {
@@ -66,16 +171,29 @@ export const AppStateMachine = createMachine<FlowContext>(
           START_RECORD: {
             target: "#Actionflow.recording",
           },
-          RESTORE_ACTIONS: {
-            target: "idle",
-            actions: ["restore"],
+          CREATE_TABLE: {
+            target: "#DbState.createWorkflow",
+          },
+          INSERT_TO_DB: {
+            target: "#DbState.saveWorkflow",
+          },
+          CLEAR_WORKFLOW: {
+            target: "#DbState.clearWorkflow",
+          },
+          UPDATE_INTERACTION: {
+            target: "#Actionflow.idle",
+            actions: ["updateInteraction"],
+          },
+          UPDATE_ACTION_FROM_FRAME: {
+            actions: assign({ flowActions: (context, event) => event.actions }),
           },
         },
       },
+      dbOperations: { ...DB_SUB_STATE },
       recording: {
         on: {
           ...commonEvents,
-          RECORDED_INTERACTION : {
+          RECORDED_INTERACTION: {
             actions: ["recordedAction", "saveToStorage"],
           },
           RECORDED_TAB_ACTION: {
@@ -87,6 +205,10 @@ export const AppStateMachine = createMachine<FlowContext>(
           ERROR: "handleError",
           UPDATE_RECORDED_ACTION: {
             actions: ["recordedAction", "saveToStorage"],
+          },
+          UPDATE_INTERACTION: {
+            target: "#Actionflow.recording",
+            actions: ["updateInteraction"],
           },
         },
       },
@@ -115,21 +237,166 @@ export const AppStateMachine = createMachine<FlowContext>(
       newAction: assign({ flowActions: createAction }),
       newOperator: assign({ flowActions: addConditionOperator }),
       newCondition: assign({ flowActions: updateCondition }),
-      restore: assign({ flowActions: restoreFlowActions }),
       activeTab: assign({ activeTab: updateActiveTab }),
       recordedAction: assign({ flowActions: actionFromRecording }),
       saveToStorage: saveToStorage,
-      handleActionSort:  assign({ flowActions: itemReposition }),
-      resolveNesting: assign({flowActions: evauateNesting}),
-      updateTab: assign({flowActions: updateTabAction}),
+      handleActionSort: assign({ flowActions: itemReposition }),
+      resolveNesting: assign({ flowActions: evauateNesting }),
+      updateTab: assign({ flowActions: updateTabAction }),
+      updateInteraction: assign({ flowActions: updateInteractionAction }),
     },
   }
 );
 
-function updateTabAction(context: FlowContext, event: any){
-  return context.flowActions.map( act => {
-    if(act.id === event.updated_action.id)
-      return event.updated_action;
+function updateInteractionAction(context: FlowContext, event: any): TAction[] {
+  console.log("in updateInteractionAction state action handler");
+  const interactionType = event.propType;
+  const actionId = event.actionId;
+  switch (interactionType) {
+    case "Common":
+      console.log("in Common case");
+      const newSelector = event.props;
+      console.log({ newSelector });
+      const updatedCommonProps = context.flowActions.map((action) => {
+        if (action.id === actionId) {
+          action = action as IntAction;
+          return {
+            ...action,
+            props: {
+              ...action.props,
+              selector: newSelector.selector,
+            },
+          } as TAction;
+        } else return action;
+      });
+      console.log("updatedCommonProps: ", updatedCommonProps);
+      return updatedCommonProps;
+      break;
+    case "Click":
+      console.log("in Click case");
+      const newClickProps = event.props;
+      const updatedClickProps = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType === "Click") {
+          return {
+            ...action,
+            props: {
+              ...action.props,
+              "Wait For New Page To load":
+                newClickProps["Wait For New Page To load"],
+              "Wait For File Download": newClickProps["Wait For File Download"],
+              Description: newClickProps["Description"],
+            },
+          } as TAction;
+        } else return action;
+      });
+      console.log("updated click props action: ", updatedClickProps);
+      return updatedClickProps;
+      break;
+    case "Type":
+      console.log("in Type case");
+      const newTypeProps = event.props;
+      const updatedTypeProps = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType === "Type") {
+          return {
+            ...action,
+            props: {
+              ...action.props,
+              Text: newTypeProps["Text"],
+              "Overwrite Existing Text":
+                newTypeProps["Overwrite Existing Text"],
+            },
+          } as TAction;
+        } else return action;
+      });
+      console.log("updatedTypeProps action: ", updatedTypeProps);
+      return updatedTypeProps;
+      break;
+    case "Hover":
+      console.log("in Hover case");
+      const newHoverProps = event.props;
+      const updatedHoverProps = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType === "Hover") {
+          return {
+            ...action,
+            props: {
+              ...action.props,
+              Description: newHoverProps["Description"],
+            },
+          } as TAction;
+        } else return action;
+      });
+      console.log("updatedHoverProps action: ", updatedHoverProps);
+      return updatedHoverProps;
+      break;
+    case "Keypress":
+      console.log("in Keypress case");
+      const newKeypressProps = event.props;
+      const updatedKeypressProps = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType == "Keypress") {
+          return {
+            ...action,
+            props: {
+              ...action.props,
+              Key: newKeypressProps["Key"],
+              "Wait For Page To Load":
+                newKeypressProps["Wait For Page To Load"],
+            },
+          } as TAction;
+        } else return action;
+      });
+      console.log("updatedKeypressProps action: ", updatedKeypressProps);
+      return updatedKeypressProps;
+      break;
+    case "Select":
+      console.log("in Select case");
+      const newSelectProps = event.props;
+      const updatedSelectProps = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType === "Select") {
+          return {
+            ...action,
+            props: {
+              ...action.props,
+              Selected: newSelectProps["Selected"],
+              Description: newSelectProps["Description"],
+            },
+          } as TAction;
+        } else return action;
+      });
+      console.log("updatedSelectProps action: ", updatedSelectProps);
+      return updatedSelectProps;
+      break;
+    case "Code":
+      console.log("in Code case");
+      const newCodeProps = event.props;
+      const updatedCodeProps = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType === "Code") {
+          return {
+            ...action,
+            props: {
+              ...action.props,
+              value: newCodeProps["value"],
+              vars: newCodeProps["vars"],
+            },
+          } as TAction;
+        } else return action;
+      });
+      console.log("updatedCodeProps action: ", updatedCodeProps);
+      return updatedCodeProps;
+      break;
+    case "Scroll":
+      break;
+    case "Upload":
+      break;
+    case "Date":
+      break;
+    case "Prompts":
+      break;
+  }
+}
+
+function updateTabAction(context: FlowContext, event: any) {
+  return context.flowActions.map((act) => {
+    if (act.id === event.updated_action.id) return event.updated_action;
     else return act;
   });
 }
@@ -139,14 +406,45 @@ function actionFromRecording(context: FlowContext, event: any) {
   const actionType = event.actionType;
   let currentAction = null;
 
-  if(["Click", "Type", "Keypress", "Select", "Hover", "Prompts"].includes(actionType))
+  if (
+    ["Click", "Type", "Keypress", "Select", "Hover", "Prompts"].includes(
+      actionType
+    )
+  )
     currentAction = "INT_ACTION";
-  if(["SelectTab", "SelectWindow", "Navigate", "NewTab", "NewWindow", "CloseTab", "CloseWindow", "Back", "Forward"].includes(actionType))
+  if (
+    [
+      "SelectTab",
+      "SelectWindow",
+      "Navigate",
+      "NewTab",
+      "NewWindow",
+      "CloseTab",
+      "CloseWindow",
+      "Back",
+      "Forward",
+    ].includes(actionType)
+  )
     currentAction = "TAB_ACTION";
 
   switch (currentAction) {
     case "INT_ACTION":
       const int_action = event.payload;
+
+      const prevlastAction = context.flowActions[
+        context.flowActions.length - 1
+      ] as IntAction;
+      if (
+        prevlastAction &&
+        ["Type", "Select"].includes(prevlastAction?.actionType) &&
+        prevlastAction.props.selector === int_action.props.selector
+      )
+        return context.flowActions.map((a) => {
+          if (a.id === prevlastAction.id)
+            return { ...a, props: int_action.props };
+          else return a;
+        });
+
       int_action["recorded"] = true;
       int_action["id"] = guidGenerator();
       int_action["svg"] = InteractionDefintions.filter(
@@ -161,12 +459,18 @@ function actionFromRecording(context: FlowContext, event: any) {
       const { url, tabId, windowId } = event.payload;
       const prevActions = context.flowActions;
       const prevNewTabAction = prevActions[prevActions.length - 1] as TabAction;
-      const isLastNewTabAction = prevActions.length > 0 && prevNewTabAction.actionType === "NewTab" && prevNewTabAction.url === "chrome://new-tab-page/";
+      const isLastNewTabAction =
+        prevActions.length > 0 &&
+        prevNewTabAction.actionType === "NewTab" &&
+        prevNewTabAction.url === "chrome://new-tab-page/";
       const isNavigate = actionType === "Navigate";
 
-      if(isLastNewTabAction && isNavigate){
+      if (isLastNewTabAction && isNavigate) {
         prevNewTabAction.url = url;
-        return [...prevActions.filter( ac => ac.id !== prevNewTabAction.id), prevNewTabAction]
+        return [
+          ...prevActions.filter((ac) => ac.id !== prevNewTabAction.id),
+          prevNewTabAction,
+        ];
       }
 
       const tab_action = {};
@@ -175,8 +479,7 @@ function actionFromRecording(context: FlowContext, event: any) {
       tab_action["nestingLevel"] = 0;
       tab_action["url"] = url;
       tab_action["svg"] = InteractionDefintions.filter(
-        (idata) =>
-          idata.name.toLowerCase() === "keypress"
+        (idata) => idata.name.toLowerCase() === "keypress"
       )[0].svg;
       tab_action["tabId"] = tabId;
       tab_action["windowId"] = windowId;
@@ -194,7 +497,8 @@ function saveToStorage(context: FlowContext) {
   const storageKey: TLocalStorageKey = "composeData";
   const stringified = JSON.stringify(flowActions);
   localStorage.setItem(storageKey, stringified);
-  console.log(stringified);
+  // console.log(stringified);
+  console.log(flowActions);
 }
 
 function guidGenerator() {
@@ -222,11 +526,16 @@ function updateActiveTab(_context: FlowContext, event: any) {
   return event.newTabInfo;
 }
 
-function createAction(context: FlowContext, event: any) {
+type TcreateActionEvent = {
+  type: "INTERACTION" | "CONDITIONALS";
+  item: TInteractionPayload | TConditionalPayload;
+};
+
+function createAction(context: FlowContext, event: TcreateActionEvent) {
   console.log("createAction");
-  const ACTION_EVENT_TYPE: "INTERACTION" | "CONDITIONALS" = event.type;
+  const ACTION_EVENT_TYPE = event.type;
   let tempState: TAction[] = [];
-  const { name, svg } : TInteractionPayload | TConditionalPayload = event.item; // TInteractionPayload, TConditionalPayload
+  const { name, svg } = event.item;
 
   switch (ACTION_EVENT_TYPE) {
     case "INTERACTION":
@@ -246,18 +555,18 @@ function createAction(context: FlowContext, event: any) {
       break;
 
     case "CONDITIONALS":
-      const GeneralConditionDefaultTemplate : GeneralCondition = {
+      const GeneralConditionDefaultTemplate: GeneralCondition = {
         selectedType: "Element",
         selectedOption: "IsVisible",
         requiresCheck: true,
         checkValue: "",
       };
-      const newConditionAction: CondAction = {
+      const newConditionAction: ConditionalAction = {
         id: guidGenerator(),
         svg: svg,
         actionType: name as CondEventTypes,
         nestingLevel: 0,
-        conditions: [ GeneralConditionDefaultTemplate ],
+        conditions: [GeneralConditionDefaultTemplate],
       };
       tempState.push(newConditionAction);
       break;
@@ -273,13 +582,15 @@ function addConditionOperator(context: FlowContext, event: any) {
   console.log("addConditionOperator");
   const actionId = event.actionId;
   const selectedOperator = event.selection;
-  const GeneralConditionDefaultTemplate : GeneralCondition = {
+  const GeneralConditionDefaultTemplate: GeneralCondition = {
     selectedType: "Element",
     selectedOption: "IsVisible",
     requiresCheck: true,
     checkValue: "",
   };
-  const prevConditions = context.flowActions.filter(({ id }) => id === actionId)[0]["conditions"];
+  const prevConditions = context.flowActions.filter(
+    ({ id }) => id === actionId
+  )[0]["conditions"];
   const updatedConditions = [
     ...prevConditions,
     { type: "Operator", selected: selectedOperator },
@@ -298,26 +609,25 @@ function addConditionOperator(context: FlowContext, event: any) {
 
 function updateCondition(context: FlowContext, event: any) {
   console.log("updateCondition");
-  const {
-    index,
-    actionId,
-    selection,
-  }: TConditionalUpdatePayload = event;
+  const { index, actionId, selection }: TConditionalUpdatePayload = event;
 
   return context.flowActions.map((action) => {
     if (action.id === actionId) {
-      const updatedCond = action["conditions"].map((cond: SelectableConditions, idx: number) => {
-        if (idx === index) { // && cond.type !== "Operator"
-          if (selection) {
-            cond["selectedType"] = selection.conditionType;
-            cond["selectedOption"] = selection.selectedOption;
-            cond["requiresCheck"] = selection.requiresCheck;
-          } else if (selection.requiresCheck && selection.value) {
-            cond["checkValue"] = selection.value;
+      const updatedCond = action["conditions"].map(
+        (cond: SelectableConditions, idx: number) => {
+          if (idx === index) {
+            // && cond.type !== "Operator"
+            if (selection) {
+              cond["selectedType"] = selection.conditionType;
+              cond["selectedOption"] = selection.selectedOption;
+              cond["requiresCheck"] = selection.requiresCheck;
+            } else if (selection.requiresCheck && selection.value) {
+              cond["checkValue"] = selection.value;
+            }
           }
+          return cond;
         }
-        return cond;
-      });
+      );
       return { ...action, conditions: updatedCond };
     }
 
@@ -336,7 +646,7 @@ function restoreFlowActions(context: FlowContext, event: any) {
   return prevActions ? JSON.parse(prevActions) : [];
 }
 
-function itemReposition(context: FlowContext, event: any){
+function itemReposition(context: FlowContext, event: any) {
   console.log("itemReposition");
   const { updatedActions } = event;
   return updatedActions;
@@ -347,10 +657,10 @@ function evauateNesting(context: FlowContext, event: any) {
 
   console.log("evauateNesting() called. event: ", event);
   // only resolve if items have changed positions
-  const {initialDraggedPos, currentDraggedPos } = event.dragInfo;
+  const { initialDraggedPos, currentDraggedPos } = event.dragInfo;
 
   // Exit early if items haven't changed positions.
-  if(initialDraggedPos === currentDraggedPos) return context.flowActions;
+  if (initialDraggedPos === currentDraggedPos) return context.flowActions;
 
   let nestingLevel = 0;
   let prevAction = null;
@@ -372,7 +682,7 @@ function evauateNesting(context: FlowContext, event: any) {
     const updatedAction = {
       ...action,
       nestingLevel: nestingLevel,
-      marginLeft: marginLeft
+      marginLeft: marginLeft,
     };
 
     prevAction = action;

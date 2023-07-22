@@ -1,13 +1,19 @@
-import "../styles/actions-menu.css";
 import { InteractionDefintions } from "../ActionsDefinitions/definitions";
 import { useState } from "react";
 import GlobeIcon from "../assets/globe";
 
-function MenuCategory({ title, items, type, dispatch }) {
+type TMenuCategory = {
+  title: String;
+  items: any;
+  type: String;
+  dispatch: any;
+};
+
+function MenuCategory({ title, items, type, dispatch }: TMenuCategory) {
   function handleActionClick(item) {
     if (type === "Interaction") dispatch({ type: "INTERACTION", item });
     else if (type === "Conditionals") dispatch({ type: "CONDITIONALS", item });
-    else if(type === "TabActions") dispatch({ type: "TAB_ACTIONS", item });
+    else if (type === "TabActions") dispatch({ type: "TAB_ACTIONS", item });
   }
 
   return (
@@ -28,19 +34,46 @@ function MenuCategory({ title, items, type, dispatch }) {
   );
 }
 
-const NewTabIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-window-stack" viewBox="0 0 16 16">
-  <path d="M4.5 6a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1ZM6 6a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Zm2-.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z"/>
-  <path d="M12 1a2 2 0 0 1 2 2 2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2 2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10ZM2 12V5a2 2 0 0 1 2-2h9a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1Zm1-4v5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8H3Zm12-1V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v2h12Z"/>
-</svg>;
+const NewTabIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    className="bi bi-window-stack"
+    viewBox="0 0 16 16"
+  >
+    <path d="M4.5 6a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1ZM6 6a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Zm2-.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z" />
+    <path d="M12 1a2 2 0 0 1 2 2 2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2 2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10ZM2 12V5a2 2 0 0 1 2-2h9a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1Zm1-4v5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8H3Zm12-1V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v2h12Z" />
+  </svg>
+);
 
-const SelectTabIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-square-half" viewBox="0 0 16 16">
-  <path d="M8 15V1h6a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8zm6 1a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12z"/>
-</svg>;
+const SelectTabIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    className="bi bi-square-half"
+    viewBox="0 0 16 16"
+  >
+    <path d="M8 15V1h6a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8zm6 1a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12z" />
+  </svg>
+);
 
-const CloseTabIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-square" viewBox="0 0 16 16">
-  <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
-  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-</svg>;
+const CloseTabIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    className="bi bi-x-square"
+    viewBox="0 0 16 16"
+  >
+    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
+    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+  </svg>
+);
 
 export default function ActionMenu({ dispatch }) {
   const [openMenu, setOpenMenu] = useState(false);
@@ -137,10 +170,26 @@ export default function ActionMenu({ dispatch }) {
         <MenuCategory
           title="TAB ACTIONS"
           items={[
-            { actionType: "Navigate", svg: GlobeIcon, payload: { url: null, tabId: null, windowId: null }},
-            { actionType: "NewTab", svg: NewTabIcon, payload: { url: null, tabId: null, windowId: null }},
-            { actionType: "SelectTab", svg: SelectTabIcon, payload: { url: null, tabId: null, windowId: null }},
-            { actionType: "CloseTab", svg: CloseTabIcon, payload: { url: null, tabId: null, windowId: null }},
+            {
+              actionType: "Navigate",
+              svg: GlobeIcon,
+              payload: { url: null, tabId: null, windowId: null },
+            },
+            {
+              actionType: "NewTab",
+              svg: NewTabIcon,
+              payload: { url: null, tabId: null, windowId: null },
+            },
+            {
+              actionType: "SelectTab",
+              svg: SelectTabIcon,
+              payload: { url: null, tabId: null, windowId: null },
+            },
+            {
+              actionType: "CloseTab",
+              svg: CloseTabIcon,
+              payload: { url: null, tabId: null, windowId: null },
+            },
           ]}
           type="TabActions"
           dispatch={dispatch}

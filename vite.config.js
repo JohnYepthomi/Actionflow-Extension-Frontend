@@ -2,7 +2,6 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { dependencies } from './package.json';
 
-
 function renderChunks(deps){
   let chunks = {};
   Object.keys(deps).forEach((key) => {

@@ -1,6 +1,6 @@
 :root {
   --li-clr: white;
-  --li-bg-clr: #393939;
+  --li-bg-clr: #2a2929fa;
 
   --li-hover-clr: black;
   --li-hover-bg-clr: lightgray;
@@ -39,7 +39,7 @@ body {
 .workflow-ul {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   width: 100%;
 }
@@ -66,15 +66,14 @@ body {
   height: 33px;
 }
 
-
 .workflow-ul li {
   /*	visibility: hidden;*/
-  width: 100%;
+  width: 300px;
   /*	border-top: 1px solid gray;*/
   /*	border-right: 1px solid gray;*/
   /*	border-bottom: 1px solid gray;*/
   /*	background-image: linear-gradient(to right, #8360c3, #2ebf91);*/
-  background-color: var(--li-bg-clr);
+  background-color: transparent; /*var(--li-bg-clr);*/
   color: white;
   border-radius: 0 3px 3px 3px;
 }
@@ -89,7 +88,7 @@ body {
   border-radius: 0 3px 3px 0px;
   color: inherit;
   cursor: pointer;
-  border-left: 5px solid #367a2a;
+  /*  border-left: 5px solid #367a2a;*/
 }
 
 .caption {
@@ -112,7 +111,8 @@ body {
   border-radius: 0 0 3px 3px;
 }
 
-button,input[type="submit"],
+button,
+input[type="submit"],
 input[type="reset"] {
   background-color: #282525;
   color: inherit;

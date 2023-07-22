@@ -1,4 +1,4 @@
-function ActionHeader({action}) {
+function ActionHeader({ action, animateControl }) {
   function toggleActionDetails(e) {
     // e.preventDefault();
 
@@ -15,24 +15,26 @@ function ActionHeader({action}) {
     }
   }
 
+  function handleAnimate(control){
+    control.set("hidden");
+    control.start("visible");
+  }
+
   return (
     <div
       className="action-header gap-1" 
       onClick={toggleActionDetails}
+      // onClick={() => handleAnimate(animateControl)}
     >
-      <input
-        type="checkbox"
-        id="accept"
-        name="accept"
-        value="yes"
-        onClick={(e) => e.stopPropagation()}
-      />
+      {/* <input id={action.id} type="checkbox" onClick={(e) => e.stopPropagation()} /> */}
       <div className="flex-row align-center justify-start gap-1 caption">
-        <div className="flex-row align-center justify-center">
-         {action.svg()}
-        </div>
+        <div className="flex-row align-center justify-center"> {action.svg()} </div>
         <div className="name">{action.actionType}</div>
-        {action?.recorded && <div className="recorded-marker">REC</div>}
+        {
+          action?.recorded  
+            &&
+          <div className="recorded-marker">REC</div>
+        }
       </div>
     </div>
   );
