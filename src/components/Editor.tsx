@@ -108,7 +108,7 @@ export default function Editor({ actions, actionId, actionProps, dispatch }) {
         autocompletion({ override: [myCompletions] }),
       ]} //
       onChange={(value, viewUpdate) => {
-        // const old_state = viewUpdate.state.toJSON(stateFields); // History
+        const old_state = viewUpdate.state.toJSON(stateFields); // History
         const vars = extractVarLabels(value);
         setCode((state) => ({ value, vars }));
       }}

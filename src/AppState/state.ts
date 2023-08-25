@@ -1,35 +1,39 @@
-import { createMachine, assign } from "xstate";
+import { createMachine, assign, EventObject } from "xstate";
 import {
-  TAction,
+  ActionNodeProps,
+  InteractionDefinitions,
+} from "../ActionsDefinitions/definitions.jsx";
+import { TAction } from "../Types/ActionTypes/Action";
+import {
   IntAction,
-  TabAction,
+  IntActionTypes,
+} from "../Types/ActionTypes/Interaction Actions";
+import {
   ConditionalAction,
   SelectableConditions,
   GeneralCondition,
-  TInteractionPayload,
-  TConditionalPayload,
-  TConditionalUpdatePayload,
-  ActionEventTypes,
   CondEventTypes,
   CondEndEventTypes,
-  TLocalStorageKey,
-  TClickAction,
-} from "./types";
-import { ActionNodeProps } from "../ActionsDefinitions/definitions.jsx";
-import { InteractionDefintions } from "../ActionsDefinitions/definitions";
-import GlobeIcon from "../assets/globe";
+  CondEndAction,
+} from "../Types/ActionTypes/Conditional Actions";
+import { TabAction } from "../Types/ActionTypes/Tab Actions";
+import { TComposeStorageKey } from "../Types/Storage Types";
+import {
+  TAppEvts,
+  TEvtWithProps,
+  Tidle,
+} from "../Types/State Types/StateEvents";
+import { TAppState, TAppContext } from "../Types/State Types/StateType";
 
-interface FlowContext {
-  flowActions: TAction[];
-  activeTab: string;
-}
+import GlobeIcon from "../assets/globe";
+import { SheetAction } from "../Types/ActionTypes/Sheet Action";
 
 const commonEvents = {
   INTERACTION: {
-    actions: ["newAction", "saveToStorage"],
+    actions: ["newAction", "resolveNesting", "saveToStorage"],
   },
   CONDITIONALS: {
-    actions: ["newAction", "saveToStorage"],
+    actions: ["newAction", "resolveNesting", "saveToStorage"],
   },
   ADD_CONDITION_OPERATOR: {
     actions: ["newOperator"],
@@ -44,7 +48,10 @@ const commonEvents = {
     actions: ["activeTab"],
   },
   DRAG_EVENT: {
-    actions: ["handleActionSort", "resolveNesting", "saveToStorage"],
+    actions: ["resolveNesting", "saveToStorage"],
+  },
+  NEW_SHEET: {
+    actions: ["newAction", "resolveNesting"],
   },
 };
 
@@ -68,7 +75,7 @@ const DB_SUB_STATE = {
     createWorkflow: {
       invoke: {
         id: "invoke-createWorkflow",
-        src: (c: FlowContext, e: any) => {
+        src: (c: TAppContext, e: any) => {
           return new Promise(async (resolve, reject) => {
             try {
               const create_response = await e.db.execute(
@@ -91,7 +98,7 @@ const DB_SUB_STATE = {
     saveWorkflow: {
       invoke: {
         id: "invoke-saveWorkflow",
-        src: (context: FlowContext, event: any) => {
+        src: (context: TAppContext, event: any) => {
           return new Promise(async (resolve, reject) => {
             try {
               console.log(
@@ -123,13 +130,13 @@ const DB_SUB_STATE = {
     getWorkflow: {
       invoke: {
         id: "invoke-getWorkflow",
-        src: (context: FlowContext, event: any) => {
+        src: (context: TAppContext, event: any) => {
           console.log("invoke-selectDb");
           return getActionsFromStore(event.workflowName, event.db);
         },
         onDone: {
           target: "#Actionflow.idle",
-          actions: assign({ flowActions: (c: FlowContext, e: any) => e.data }),
+          actions: assign({ flowActions: (c: TAppContext, e: any) => e.data }),
         },
         onError: "#Actionflow.error",
       },
@@ -137,7 +144,7 @@ const DB_SUB_STATE = {
     clearWorkflow: {
       invoke: {
         id: "invoke-clearWorkflow",
-        src: (c: FlowContext, e: any) => {
+        src: (c: TAppContext, e: any) => {
           console.log(`CLEARING '${e.workflowName}' from 'WORKFLOW' TABLE`);
           const QUERY = `DELETE FROM workflows WHERE name = '${e.workflowName}'`;
           return e.db.execute(QUERY);
@@ -148,7 +155,12 @@ const DB_SUB_STATE = {
     },
   },
 };
-export const AppStateMachine = createMachine<FlowContext>(
+
+export const AppStateMachine = createMachine<
+  TAppContext,
+  TAppEvts,
+  TAppState<TAppContext>
+>(
   {
     predictableActionArguments: true,
     id: "Actionflow",
@@ -185,7 +197,9 @@ export const AppStateMachine = createMachine<FlowContext>(
             actions: ["updateInteraction"],
           },
           UPDATE_ACTION_FROM_FRAME: {
-            actions: assign({ flowActions: (context, event) => event.actions }),
+            actions: assign({
+              flowActions: (context, event: any) => event.actions,
+            }),
           },
         },
       },
@@ -193,11 +207,8 @@ export const AppStateMachine = createMachine<FlowContext>(
       recording: {
         on: {
           ...commonEvents,
-          RECORDED_INTERACTION: {
-            actions: ["recordedAction", "saveToStorage"],
-          },
-          RECORDED_TAB_ACTION: {
-            actions: ["recordedAction", "saveToStorage"],
+          RECORDED_ACTION: {
+            actions: ["recordedAction", "resolveNesting", "saveToStorage"],
           },
           STOP_RECORD: {
             target: "#Actionflow.idle",
@@ -215,7 +226,7 @@ export const AppStateMachine = createMachine<FlowContext>(
       handleError: {
         invoke: {
           id: "handle-error",
-          src: (_context, event) => {
+          src: (_context, event: any) => {
             return new Promise((res, rej) => {
               try {
                 handleErrors(event.data);
@@ -240,16 +251,26 @@ export const AppStateMachine = createMachine<FlowContext>(
       activeTab: assign({ activeTab: updateActiveTab }),
       recordedAction: assign({ flowActions: actionFromRecording }),
       saveToStorage: saveToStorage,
-      handleActionSort: assign({ flowActions: itemReposition }),
-      resolveNesting: assign({ flowActions: evauateNesting }),
+      resolveNesting: assign({
+        flowActions: (c: TAppContext, e: TEvtWithProps) => {
+          const val = evauateNesting(c, e);
+          return val;
+        },
+      }),
       updateTab: assign({ flowActions: updateTabAction }),
       updateInteraction: assign({ flowActions: updateInteractionAction }),
     },
   }
 );
 
-function updateInteractionAction(context: FlowContext, event: any): TAction[] {
+function updateInteractionAction(
+  context: TAppContext,
+  event: TEvtWithProps
+): TAction[] {
   console.log("in updateInteractionAction state action handler");
+
+  if (event.type != "UPDATE_INTERACTION") return;
+
   const interactionType = event.propType;
   const actionId = event.actionId;
   switch (interactionType) {
@@ -258,8 +279,7 @@ function updateInteractionAction(context: FlowContext, event: any): TAction[] {
       const newSelector = event.props;
       console.log({ newSelector });
       const updatedCommonProps = context.flowActions.map((action) => {
-        if (action.id === actionId) {
-          action = action as IntAction;
+        if (action.id === actionId && "props" in action) {
           return {
             ...action,
             props: {
@@ -272,6 +292,7 @@ function updateInteractionAction(context: FlowContext, event: any): TAction[] {
       console.log("updatedCommonProps: ", updatedCommonProps);
       return updatedCommonProps;
       break;
+
     case "Click":
       console.log("in Click case");
       const newClickProps = event.props;
@@ -286,7 +307,7 @@ function updateInteractionAction(context: FlowContext, event: any): TAction[] {
               "Wait For File Download": newClickProps["Wait For File Download"],
               Description: newClickProps["Description"],
             },
-          } as TAction;
+          };
         } else return action;
       });
       console.log("updated click props action: ", updatedClickProps);
@@ -305,7 +326,7 @@ function updateInteractionAction(context: FlowContext, event: any): TAction[] {
               "Overwrite Existing Text":
                 newTypeProps["Overwrite Existing Text"],
             },
-          } as TAction;
+          };
         } else return action;
       });
       console.log("updatedTypeProps action: ", updatedTypeProps);
@@ -341,7 +362,7 @@ function updateInteractionAction(context: FlowContext, event: any): TAction[] {
               "Wait For Page To Load":
                 newKeypressProps["Wait For Page To Load"],
             },
-          } as TAction;
+          };
         } else return action;
       });
       console.log("updatedKeypressProps action: ", updatedKeypressProps);
@@ -359,7 +380,7 @@ function updateInteractionAction(context: FlowContext, event: any): TAction[] {
               Selected: newSelectProps["Selected"],
               Description: newSelectProps["Description"],
             },
-          } as TAction;
+          };
         } else return action;
       });
       console.log("updatedSelectProps action: ", updatedSelectProps);
@@ -377,7 +398,7 @@ function updateInteractionAction(context: FlowContext, event: any): TAction[] {
               value: newCodeProps["value"],
               vars: newCodeProps["vars"],
             },
-          } as TAction;
+          };
         } else return action;
       });
       console.log("updatedCodeProps action: ", updatedCodeProps);
@@ -394,14 +415,14 @@ function updateInteractionAction(context: FlowContext, event: any): TAction[] {
   }
 }
 
-function updateTabAction(context: FlowContext, event: any) {
+function updateTabAction(context, event) {
   return context.flowActions.map((act) => {
     if (act.id === event.updated_action.id) return event.updated_action;
     else return act;
   });
 }
 
-function actionFromRecording(context: FlowContext, event: any) {
+function actionFromRecording(context, event) {
   console.log("actionFromRecording");
   const actionType = event.actionType;
   let currentAction = null;
@@ -447,10 +468,6 @@ function actionFromRecording(context: FlowContext, event: any) {
 
       int_action["recorded"] = true;
       int_action["id"] = guidGenerator();
-      int_action["svg"] = InteractionDefintions.filter(
-        (idata) =>
-          idata.name.toLowerCase() === int_action.actionType.toLowerCase()
-      )[0].svg;
       int_action["nestingLevel"] = 0;
       return [...context.flowActions, int_action as IntAction];
       break;
@@ -463,9 +480,9 @@ function actionFromRecording(context: FlowContext, event: any) {
         prevActions.length > 0 &&
         prevNewTabAction.actionType === "NewTab" &&
         prevNewTabAction.url === "chrome://new-tab-page/";
-      const isNavigate = actionType === "Navigate";
+      const isNavigateAction = actionType === "Navigate";
 
-      if (isLastNewTabAction && isNavigate) {
+      if (isLastNewTabAction && isNavigateAction) {
         prevNewTabAction.url = url;
         return [
           ...prevActions.filter((ac) => ac.id !== prevNewTabAction.id),
@@ -478,9 +495,6 @@ function actionFromRecording(context: FlowContext, event: any) {
       tab_action["actionType"] = event.actionType;
       tab_action["nestingLevel"] = 0;
       tab_action["url"] = url;
-      tab_action["svg"] = InteractionDefintions.filter(
-        (idata) => idata.name.toLowerCase() === "keypress"
-      )[0].svg;
       tab_action["tabId"] = tabId;
       tab_action["windowId"] = windowId;
       return [...context.flowActions, tab_action as TabAction];
@@ -492,9 +506,9 @@ function actionFromRecording(context: FlowContext, event: any) {
   }
 }
 
-function saveToStorage(context: FlowContext) {
+function saveToStorage(context: TAppContext) {
   const { flowActions } = context;
-  const storageKey: TLocalStorageKey = "composeData";
+  const storageKey: TComposeStorageKey = "composeData";
   const stringified = JSON.stringify(flowActions);
   localStorage.setItem(storageKey, stringified);
   // console.log(stringified);
@@ -521,17 +535,12 @@ function guidGenerator() {
   );
 }
 
-function updateActiveTab(_context: FlowContext, event: any) {
+function updateActiveTab(_context: TAppContext, event: any) {
   console.log("updateActiveTab");
   return event.newTabInfo;
 }
 
-type TcreateActionEvent = {
-  type: "INTERACTION" | "CONDITIONALS";
-  item: TInteractionPayload | TConditionalPayload;
-};
-
-function createAction(context: FlowContext, event: TcreateActionEvent) {
+function createAction(context: TAppContext, event) {
   console.log("createAction");
   const ACTION_EVENT_TYPE = event.type;
   let tempState: TAction[] = [];
@@ -545,8 +554,7 @@ function createAction(context: FlowContext, event: TcreateActionEvent) {
       };
       const newInteractionAction: IntAction = {
         id: guidGenerator(),
-        svg: svg,
-        actionType: name as ActionEventTypes,
+        actionType: name satisfies IntActionTypes,
         recorded: false,
         props,
         nestingLevel: 0,
@@ -555,21 +563,39 @@ function createAction(context: FlowContext, event: TcreateActionEvent) {
       break;
 
     case "CONDITIONALS":
+      const ctype =
+        name === "IF"
+          ? "IF"
+          : name === "ELSE"
+          ? "ELSE"
+          : name === "WHILE"
+          ? "WHILE"
+          : "END";
       const GeneralConditionDefaultTemplate: GeneralCondition = {
         selectedType: "Element",
         selectedOption: "IsVisible",
         requiresCheck: true,
         checkValue: "",
       };
-      const newConditionAction: ConditionalAction = {
+      const newConditionAction: ConditionalAction | CondEndAction = {
         id: guidGenerator(),
-        svg: svg,
-        actionType: name as CondEventTypes,
+        actionType: ctype satisfies
+          | ConditionalAction["actionType"]
+          | CondEndAction["actionType"],
         nestingLevel: 0,
         conditions: [GeneralConditionDefaultTemplate],
       };
       tempState.push(newConditionAction);
       break;
+
+    case "NEW_SHEET":
+      const newSheet: SheetAction = {
+        id: guidGenerator(),
+        actionType: "Sheet" satisfies SheetAction["actionType"],
+        props: {},
+        nestingLevel: 0,
+      };
+      tempState.push(newSheet);
 
     default:
       break;
@@ -578,8 +604,10 @@ function createAction(context: FlowContext, event: TcreateActionEvent) {
   return [...context.flowActions, ...tempState];
 }
 
-function addConditionOperator(context: FlowContext, event: any) {
+function addConditionOperator(context: TAppContext, event: TEvtWithProps) {
   console.log("addConditionOperator");
+  if (event.type !== "ADD_CONDITION_OPERATOR") return;
+
   const actionId = event.actionId;
   const selectedOperator = event.selection;
   const GeneralConditionDefaultTemplate: GeneralCondition = {
@@ -607,22 +635,23 @@ function addConditionOperator(context: FlowContext, event: any) {
   ];
 }
 
-function updateCondition(context: FlowContext, event: any) {
+function updateCondition(context: TAppContext, event: TEvtWithProps) {
   console.log("updateCondition");
-  const { index, actionId, selection }: TConditionalUpdatePayload = event;
+  if (event.type != "UPDATE_CONDITION") return;
+  const payload = event.payload;
+
+  const { index, actionId } = payload;
 
   return context.flowActions.map((action) => {
     if (action.id === actionId) {
       const updatedCond = action["conditions"].map(
         (cond: SelectableConditions, idx: number) => {
           if (idx === index) {
-            // && cond.type !== "Operator"
-            if (selection) {
-              cond["selectedType"] = selection.conditionType;
-              cond["selectedOption"] = selection.selectedOption;
-              cond["requiresCheck"] = selection.requiresCheck;
-            } else if (selection.requiresCheck && selection.value) {
-              cond["checkValue"] = selection.value;
+            if ("selection" in payload) {
+              cond["selectedType"] = payload.selection.conditionType;
+              cond["selectedOption"] = payload.selection.selectedOption;
+            } else if ("checkValue" in payload) {
+              cond["checkValue"] = payload.checkValue;
             }
           }
           return cond;
@@ -639,34 +668,25 @@ function handleErrors(error: any) {
   console.log(error);
 }
 
-function restoreFlowActions(context: FlowContext, event: any) {
+function restoreFlowActions(context: TAppContext, event: any) {
   console.log("restoreFlowActions");
-  const storageKey: TLocalStorageKey = "composeData";
+  const storageKey: TComposeStorageKey = "composeData";
   const prevActions = localStorage.getItem(storageKey);
   return prevActions ? JSON.parse(prevActions) : [];
 }
 
-function itemReposition(context: FlowContext, event: any) {
-  console.log("itemReposition");
-  const { updatedActions } = event;
-  return updatedActions;
-}
+function evauateNesting(context: TAppContext, event: TEvtWithProps) {
+  console.log("evauateNesting() called. event: ", event);
 
-function evauateNesting(context: FlowContext, event: any) {
   const t0 = performance.now();
 
-  console.log("evauateNesting() called. event: ", event);
-  // only resolve if items have changed positions
-  const { initialDraggedPos, currentDraggedPos } = event.dragInfo;
-
-  // Exit early if items haven't changed positions.
-  if (initialDraggedPos === currentDraggedPos) return context.flowActions;
-
+  let changedActions =
+    event.type === "DRAG_EVENT" ? event.payload.dragInfo : context.flowActions;
   let nestingLevel = 0;
   let prevAction = null;
   let PrevIfCount = 0;
   let marginLeft = 0;
-  const newActions = context.flowActions.map((action) => {
+  const newActions = changedActions.map((action) => {
     if (prevAction?.actionType === "IF") {
       PrevIfCount++;
       nestingLevel++;
@@ -690,7 +710,7 @@ function evauateNesting(context: FlowContext, event: any) {
   });
 
   const t1 = performance.now();
-  console.log(`EvauateNesting took ${t1 - t0} milliseconds.`);
+  console.log(`Evaluating Nesting took ${t1 - t0} milliseconds.`);
 
   return newActions;
 }

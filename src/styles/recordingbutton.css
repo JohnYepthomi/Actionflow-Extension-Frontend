@@ -1,30 +1,51 @@
+.record-container {
+  align-self: self-start;
+  height: 50px;
+}
+
 button:active {
   transform: scale(0.98);
-  background-color: #2a2a2a;
+  color: white;
 }
 
 .rec-button {
-  color: white;
-  background-color: red;
-  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+.rec-button[data-status="recording"] {
+  color: rgb(235, 234, 234);
   outline: none;
-  border-radius: 3px;
+  border-radius: 50%;
   border: none;
   cursor: pointer;
-  width: 100px;
-  font-size: 0.71rem;
   font-weight: bold;
 }
 
-.rec-button:disabled {
-  color: white;
-  background-color: darkgray;
-  padding: 5px;
+.rec-button[data-status="stopped"] {
+  color: red;
   outline: none;
-  border-radius: 3px;
+  border-radius: 50%;
   border: none;
   cursor: pointer;
-  width: 100px;
+  font-weight: bold;
+}
+
+.rec-button:not(:disabled):hover {
+  background-color: #343434;
+  color: red;
+}
+
+.rec-button:disabled {
+  color: rgb(139, 126, 126);
+  background-color: rgb(49, 46, 46);
+  outline: none;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
   font-size: 0.71rem;
   font-weight: bold;
 }

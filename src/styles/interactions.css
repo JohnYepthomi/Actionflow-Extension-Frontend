@@ -1,9 +1,15 @@
 input {
   color: orange;
-  border-radius: 5px;
-  background-color: #535858;
+  background-color: #393939;
 }
 
 input[placeholder="Enter description"] {
-  color: lightgray;
+  color: gray;
+}
+
+select {
+  outline: none;
+  color: rgb(194, 192, 192);
+  background-color: #393939;
+  border: none;
 }

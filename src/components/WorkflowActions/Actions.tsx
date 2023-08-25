@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import ActionHeader from "./ActionHeader";
 import ActionDetails from "./ActionDetails";
-import { motion } from "framer-motion";
-import { useAnimationControls } from "framer-motion";
-import { TAction } from "../../AppState/types";
+import { motion, useAnimationControls } from "framer-motion";
+import { TAction } from "../../Types/ActionTypes/Action";
 
-function getAnimationClassNames(index, movedItem, draggedItem) {
+function getAnimationClassNames<T extends number>(
+  index: T,
+  movedItem: T,
+  draggedItem: T
+): string {
   if (movedItem !== index) return "";
   if (movedItem - draggedItem > 0) return "moved-down";
   else return "move-up";
@@ -19,27 +22,36 @@ const transparentImage = new Image();
 transparentImage.src =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42AAAAABJRU5ErkJggg==";
 
-type CActionsParams = { actions: TAction[]; dispatch: any; current: any };
-
-const ChromeActions = ({ actions, dispatch, current }: CActionsParams) => {
-  const [localActions, setLocalActions] = useState(actions); // local state is required to facilitate drag and drop
-  const initialDraggedPos: { current: number } = useRef();
-  const movedPos: { current: number } = useRef();
-  const draggedPos: { current: number } = useRef();
-  const enterPos: { current: number } = useRef();
-  const tempMarginLeft: { current: number } = useRef();
+const ChromeActions = ({
+  current,
+  dispatch,
+}: {
+  actions: TAction[];
+  dispatch: any;
+  current: any;
+}) => {
+  const [localActions, setLocalActions] = useState<TAction[]>(
+    current.context.flowActions
+  ); // local state is required to facilitate drag and drop
+  const initialDraggedPos = useRef<number>();
+  const movedPos = useRef<number>();
+  const enterPos = useRef<number>();
+  const draggedPos = useRef<number>();
   const controls = useAnimationControls();
 
   // CHROME DRAG EVENTS HANDLERS
   const handleDragStart = (e, index) => {
     console.log("handleDragStart");
     e.dataTransfer.effectAllowed = "move";
+    const clonedNode = e.target.cloneNode(true);
+    e.dataTransfer.setDragImage(clonedNode, 0, 0);
+    clonedNode.style.opacity = "0.5";
     // e.dataTransfer.setData('text/plain', 'some_dummy_data'); // firefox
-    // e.target.style.backgroundColor = "red";
+    // itemColor = e.target.style.backgroundColor;
     // e.target.style.opacity = "0.001";
 
-    tempMarginLeft.current = e.target.style.marginLeft;
-    e.target.style.marginLeft = "";
+    // tempMarginLeft.current = e.target.style.marginLeft;
+    // e.target.style.marginLeft = "";
     draggedPos.current = index;
     initialDraggedPos.current = index;
   };
@@ -69,34 +81,29 @@ const ChromeActions = ({ actions, dispatch, current }: CActionsParams) => {
   };
   const handleDragEnd = (e, index) => {
     // e.target.style.opacity = "1";
-    // e.target.style.backgroundColor = "#393939";
+    // e.target.style.backgroundColor = itemColor;
 
-    e.target.style.marginLeft = tempMarginLeft.current;
+    // e.target.style.marginLeft = tempMarginLeft.current;
 
     if (initialDraggedPos.current !== draggedPos.current) {
-      // setLocalActions((state) => EvauateNesting(state));
       dispatch({
         type: "DRAG_EVENT",
-        updatedActions: localActions,
-        dragInfo: {
-          initialDraggedPos: initialDraggedPos.current,
-          currentDraggedPos: draggedPos.current,
-        },
+        payload: { dragInfo: localActions },
       });
     }
 
     resetRefs();
   };
 
+  /* --------- LINES ANIMATION --------- */
   useEffect(() => {
     controls.start("visible");
   }, [controls, localActions]);
 
   useEffect(() => {
     // console.log("Workflow -> Actions -> localActions: ", localActions);
-    console.log("Actions Component Rerendered");
-    setLocalActions((state) => actions);
-  }, [actions]);
+    setLocalActions((state) => current.context.flowActions);
+  }, [current.context.flowActions]);
 
   function resetRefs() {
     console.log("resetting refs...");
@@ -106,72 +113,56 @@ const ChromeActions = ({ actions, dispatch, current }: CActionsParams) => {
     initialDraggedPos.current = null;
   }
 
-  const variants = {
-    visible: {
-      opacity: 1,
-      x: 0,
-    },
-    hidden: {
-      opacity: 0,
-      x: -15,
-    },
-  };
-
   return (
-    <AddStyle>
-      <ul className="workflow-ul" style={{ overflowX: "hidden" }}>
-        {localActions.map((action, index) => {
-          const marginLeft = action.nestingLevel * 35;
+    <ul className="workflow-ul">
+      {localActions.map((action, index) => {
+        const nest_width_decrease_factor = action.nestingLevel * 15;
 
-          return (
-            <motion.li
-              key={action.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnter={(e) => handleDragEnter(e, index)}
-              onDragLeave={(e) => handleDragLeave(e, index)}
-              onDragEnd={(e) => handleDragEnd(e, index)}
-              className={getAnimationClassNames(
-                index,
-                movedPos.current,
-                draggedPos.current
-              )}
-              style={{ position: "relative", marginLeft }}
-              /* framer */
-              initial="hidden"
-              variants={variants}
-              animate={controls}
-              transition={{ duration: 0.3 }}
-              // sx={{
-              //   "&::before": {
-              //     content: '""',
-              //     backgroundColor: "red",
-              //     position: "absolute",
-              //     width: "100%",
-              //     height: "100%",
-              //     left: 0,
-              //     top: 0,
-              //     zIndex: 2,
-              //     transform: "var(--before-x)"
-              //   }
-              // }}
-            >
-              <ActionHeader action={action} animateControl={controls} />
-              <ActionDetails
-                action={action}
-                localActions={localActions}
-                dispatch={dispatch}
-                current={current}
-              />
-            </motion.li>
-          );
-        })}
-      </ul>
-    </AddStyle>
+        return (
+          <motion.li
+            key={action.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragEnter={(e) => handleDragEnter(e, index)}
+            onDragLeave={(e) => handleDragLeave(e, index)}
+            onDragEnd={(e) => handleDragEnd(e, index)}
+            className={getAnimationClassNames(
+              index,
+              movedPos.current,
+              draggedPos.current
+            )}
+            style={{
+              position: "relative",
+              width:
+                nest_width_decrease_factor === 0
+                  ? "100%"
+                  : `calc(400px - ${nest_width_decrease_factor}px`,
+              alignSelf: action.nestingLevel > 0 ? "flex-end" : "center",
+            }}
+          >
+            <ActionHeader action={action} animateControl={controls} />
+            <ActionDetails
+              action={action}
+              localActions={localActions}
+              dispatch={dispatch}
+              current={current}
+            />
+          </motion.li>
+        );
+      })}
+    </ul>
   );
 };
 
-const WebkitActions = ({ actions, dispatch, current }: CActionsParams) => {
+const WebkitActions = ({
+  actions,
+  dispatch,
+  current,
+}: {
+  actions: TAction[];
+  dispatch: any;
+  current: any;
+}) => {
   const [localActions, setLocalActions] = useState(actions); // local state is required to facilitate drag and drop
   const initialDraggedPos: { current: number } = useRef();
   const movedPos: { current: number } = useRef();
@@ -284,15 +275,6 @@ const WebkitActions = ({ actions, dispatch, current }: CActionsParams) => {
         );
       })}
     </ul>
-  );
-};
-
-const AddStyle = ({ children }) => {
-  return (
-    <>
-      {/* <style type="text/css">{draganddropStyle}</style> */}
-      {children}
-    </>
   );
 };
 

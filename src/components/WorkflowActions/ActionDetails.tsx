@@ -1,5 +1,6 @@
 import { Interaction, Conditionals, TabActions } from "..";
-import { TAction } from "../../AppState/types";
+import { TAction } from "../../Types/ActionTypes/Action";
+import Sheet from "../Sheet";
 
 const INT_ACTIONS = [
   "Click",
@@ -12,6 +13,7 @@ const INT_ACTIONS = [
   "Upload",
   "Code",
   "Prompts",
+  "List",
 ];
 const COND_ACTIONS = ["IF", "WHILE", "END", "ELSE", "BREAK"];
 
@@ -28,39 +30,34 @@ function ActionDetails({
   dispatch: any;
   current: any;
 }) {
-  // Filter out Actions that doesn't have/require any Details to display
-  if (
-    INT_ACTIONS.includes(action.actionType) &&
-    COND_ACTIONS.includes(action.actionType) &&
-    TAB_ACTIONS.includes(action.actionType)
-  )
-    return;
+  // Actions that have Details to display
+  if ("props" in action || "conditions" in action || "tabId" in action)
+    return (
+      <div className="action-details flex-column p-2" data-show-details="false">
+        {INT_ACTIONS.includes(action.actionType) && (
+          <Interaction
+            action={action}
+            actions={localActions}
+            current={current}
+            dispatch={dispatch}
+          />
+        )}
 
-  return (
-    <div className="action-details flex-column p-2">
-      {INT_ACTIONS.includes(action.actionType) && (
-        <Interaction
-          action={action}
-          actions={localActions}
-          current={current}
-          dispatch={dispatch}
-        />
-      )}
+        {COND_ACTIONS.includes(action.actionType) && (
+          <Conditionals
+            conditionType="IF"
+            action={action}
+            dispatch={dispatch}
+          />
+        )}
 
-      {COND_ACTIONS.includes(action.actionType) && (
-        <Conditionals
-          conditionType="IF"
-          actions={localActions}
-          actionId={action.id}
-          dispatch={dispatch}
-        />
-      )}
+        {TAB_ACTIONS.includes(action.actionType) && (
+          <TabActions action={action} dispatch={dispatch} />
+        )}
 
-      {TAB_ACTIONS.includes(action.actionType) && (
-        <TabActions action={action} dispatch={dispatch} />
-      )}
-    </div>
-  );
+        {action.actionType === "Sheet" && <Sheet />}
+      </div>
+    );
 }
 
 export default ActionDetails;

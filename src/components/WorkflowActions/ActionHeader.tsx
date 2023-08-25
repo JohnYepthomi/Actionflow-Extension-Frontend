@@ -1,40 +1,56 @@
-function ActionHeader({ action, animateControl }) {
-  function toggleActionDetails(e) {
-    // e.preventDefault();
+import { TAction } from "../../Types/ActionTypes/Action";
+import type { AnimationControls } from "framer-motion";
+import { InteractionDefinitions } from "../../ActionsDefinitions/definitions";
+import React from "react";
 
-    if (!e.currentTarget.classList.contains("action-header")) return;
-
-    const actionHeaderEl = e.currentTarget;
-    const actionDetailsEl =
-      actionHeaderEl.parentElement.querySelector(".action-details");
-    const display = actionDetailsEl.style.display;
-    if (display === "" || display === "flex") {
-      actionDetailsEl.style.display = "none";
-    } else {
-      actionDetailsEl.style.display = "flex";
-    }
-  }
-
-  function handleAnimate(control){
+function ActionHeader({
+  action,
+  animateControl,
+}: {
+  action: TAction;
+  animateControl: AnimationControls;
+}) {
+  const handleAnimate = React.useCallback((control) => {
     control.set("hidden");
     control.start("visible");
-  }
+  }, []);
+
+  const handleHeaderClick = React.useCallback((e) => {
+    const detailsEl = e.target.parentElement.querySelector(".action-details");
+
+    if (detailsEl) {
+      const attr_val = JSON.parse(detailsEl.getAttribute("data-show-details"));
+      if (attr_val) detailsEl.setAttribute("data-show-details", "false");
+      else detailsEl.setAttribute("data-show-details", "true");
+    }
+  }, []);
 
   return (
     <div
-      className="action-header gap-1" 
-      onClick={toggleActionDetails}
+      className="action-header gap-1"
+      onClick={handleHeaderClick}
       // onClick={() => handleAnimate(animateControl)}
     >
-      {/* <input id={action.id} type="checkbox" onClick={(e) => e.stopPropagation()} /> */}
       <div className="flex-row align-center justify-start gap-1 caption">
-        <div className="flex-row align-center justify-center"> {action.svg()} </div>
+        <div className="flex-row align-center justify-center">
+          {InteractionDefinitions.find(
+            (d) => d.name === action.actionType
+          )?.svg()}
+        </div>
         <div className="name">{action.actionType}</div>
-        {
-          action?.recorded  
-            &&
-          <div className="recorded-marker">REC</div>
-        }
+        {"recorded" in action && action.recorded && (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="red"
+            className="bi bi-record2"
+            viewBox="0 0 16 16"
+          >
+            <path d="M8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0 1A5 5 0 1 0 8 3a5 5 0 0 0 0 10z" />
+            <path d="M10 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
+          </svg>
+        )}
       </div>
     </div>
   );

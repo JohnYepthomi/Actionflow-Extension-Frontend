@@ -2,14 +2,17 @@ import Editor from "./Editor.jsx";
 import React from "react";
 import {
   IntAction,
-  TAction,
   TClickAction,
   TTypeAction,
   TSelectAction,
   TKeypressAction,
   THoverAction,
   TCommonProp,
-} from "../AppState/types";
+  TListAction,
+} from "../Types/ActionTypes/Interaction Actions";
+import { TAction } from "../Types/ActionTypes/Action";
+import { TEvtWithProps } from "../Types/State Types/StateEvents.js";
+import messageTab from "../utils/messageTab.js";
 
 function debounce(fn, ms) {
   let timer;
@@ -29,32 +32,42 @@ function debounce(fn, ms) {
 
 const DEBOUNCE_DELAY = 0;
 
-type TCommonDispatchRef = {
-  current: (props: TCommonProp, dispatch: any, actionId: string) => void;
-};
-function Common({ action, current, dispatch }) {
-  const commomDispatchRef: TCommonDispatchRef = React.useRef(
+type TCommonDispatchRef = (
+  props: TCommonProp,
+  dispatch: any,
+  actionId: string
+) => void;
+
+function Common({ action, dispatch }) {
+  const commomDispatchRef = React.useRef<TCommonDispatchRef>(
     debounce((selector, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
         propType: "Common",
         props: selector,
         actionId,
-      });
+      } as TEvtWithProps);
     }, DEBOUNCE_DELAY)
   );
 
-  function handleSelectorChange(e) {
+  const handlePickElement = React.useCallback((actionType: string) => {
+    if (actionType === "List") {
+      console.log("Picking List Element");
+      messageTab({}); // <--------------------<< Message contentScript on the active tab to enable selecting list elements.
+    }
+  }, []);
+
+  const handleSelectorChange = React.useCallback((e) => {
     commomDispatchRef.current(
       { ...action.props, selector: e.target.value },
       dispatch,
       action.id
     );
-  }
+  }, []);
 
   return (
     <div className="common flex-column">
-      <div className="fw-bold txt-clr fs-md">Selector</div>
+      <div className="fs-md">Selector</div>
       <div className="flex-row align-center">
         <input
           className="flex-1"
@@ -63,7 +76,12 @@ function Common({ action, current, dispatch }) {
           value={action.props.selector}
           onChange={handleSelectorChange}
         />
-        <button className="button-60">Pick</button>
+        <button
+          className="button-60"
+          onClick={() => handlePickElement(action.actionType)}
+        >
+          Pick
+        </button>
       </div>
     </div>
   );
@@ -72,72 +90,62 @@ function Common({ action, current, dispatch }) {
 function Scroll({ action, current, dispatch }) {
   return (
     <div className="flex-column mt">
-      <div className="fw-bold txt-clr fs-md">Scroll Direction</div>
+      <div className="fs-md">Scroll Direction</div>
       <select>
         <option>Scroll Top</option>
         <option>Scroll Bottom</option>
       </select>
       <div className="flex-column mt">
-        <label className="fw-bold txt-clr fs-md">Description</label>
+        <label className="fs-md">Description</label>
         <input type="text" placeholder="Enter description" />
       </div>
     </div>
   );
 }
 
-type TClickDispatchRef = {
-  current: (
-    props: TClickAction["props"],
-    dispatch: any,
-    actionId: string
-  ) => void;
-};
+type TClickDispatchRef = (
+  props: TClickAction["props"],
+  dispatch: any,
+  actionId: string
+) => void;
 
-function Click({
-  action,
-  current,
-  dispatch,
-}: {
-  action: TClickAction;
-  current: any;
-  dispatch: any;
-}) {
-  const dbounceRef: TClickDispatchRef = React.useRef(
+function Click({ action, dispatch }: { action: TClickAction; dispatch: any }) {
+  const dbounceRef = React.useRef<TClickDispatchRef>(
     debounce((props, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
         propType: "Click",
         props,
         actionId,
-      });
+      } as TEvtWithProps);
     }, DEBOUNCE_DELAY)
   );
 
-  function handleClickProps(e) {
-    const intPropType = e.target.getAttribute("data-proptype");
+  const handleClickProps = React.useCallback((e) => {
+    const prop = e.target.getAttribute("data-proptype");
 
-    if (intPropType === "Wait For New Page To load") {
+    if (prop === "Wait For New Page To load") {
       dbounceRef.current(
         { ...action.props, "Wait For New Page To load": e.target.checked },
         dispatch,
         action.id
       );
     }
-    if (intPropType === "Wait For File Download") {
+    if (prop === "Wait For File Download") {
       dbounceRef.current(
         { ...action.props, "Wait For File Download": e.target.checked },
         dispatch,
         action.id
       );
     }
-    if (intPropType === "Description") {
+    if (prop === "Description") {
       dbounceRef.current(
         { ...action.props, Description: e.target.value },
         dispatch,
         action.id
       );
     }
-  }
+  }, []);
 
   return (
     <div className="flex-column mt">
@@ -162,7 +170,7 @@ function Click({
       </div>
 
       <div className="flex-column mt">
-        <label className="fw-bold txt-clr fs-md">Description (optional)</label>
+        <label className="fs-md">Description (optional)</label>
         <input
           type="text"
           placeholder="Enter description"
@@ -175,34 +183,25 @@ function Click({
   );
 }
 
-type TTypeDispatchRef = {
-  current: (
-    props: TTypeAction["props"],
-    dispatch: any,
-    actionId: string
-  ) => void;
-};
-function Type({
-  action,
-  current,
-  dispatch,
-}: {
-  action: TTypeAction;
-  current: any;
-  dispatch: any;
-}) {
-  const dbounceRef: TTypeDispatchRef = React.useRef(
+type TTypeDispatchRef = (
+  props: TTypeAction["props"],
+  dispatch: any,
+  actionId: string
+) => void;
+
+function Type({ action, dispatch }: { action: TTypeAction; dispatch: any }) {
+  const dbounceRef = React.useRef<TTypeDispatchRef>(
     debounce((props, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
         propType: "Type",
         props,
         actionId,
-      });
+      } as TEvtWithProps);
     }, DEBOUNCE_DELAY)
   );
 
-  function handleTypePropChange(e) {
+  const handleTypePropChange = React.useCallback((e) => {
     if (e.target.getAttribute("data-proptype") === "typing-text") {
       dbounceRef.current(
         { ...action.props, Text: e.target.value },
@@ -217,11 +216,11 @@ function Type({
         action.id
       );
     }
-  }
+  }, []);
 
   return (
     <div className="flex-column mt">
-      <div className="fw-bold txt-clr fs-md">Text</div>
+      <div className="fs-md">Text</div>
       <input
         type="text"
         placeholder="Type Text"
@@ -242,45 +241,36 @@ function Type({
   );
 }
 
-type THoverDispatchRef = {
-  current: (
-    props: THoverAction["props"],
-    dispatch: any,
-    actionId: string
-  ) => void;
-};
-function Hover({
-  action,
-  current,
-  dispatch,
-}: {
-  action: THoverAction;
-  current: any;
-  dispatch: any;
-}) {
-  const dbounceRef: THoverDispatchRef = React.useRef(
+type THoverDispatchRef = (
+  props: THoverAction["props"],
+  dispatch: any,
+  actionId: string
+) => void;
+
+function Hover({ action, dispatch }: { action: THoverAction; dispatch: any }) {
+  const dbounceRef = React.useRef<THoverDispatchRef>(
     debounce((props, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
         propType: "Hover",
         props,
         actionId,
-      });
+      } as TEvtWithProps);
     }, DEBOUNCE_DELAY)
   );
 
-  function handlerDescriptionChange(e) {
+  const handlerDescriptionChange = React.useCallback((e) => {
     dbounceRef.current(
       { ...action.props, Description: e.target.value },
       dispatch,
       action.id
     );
-  }
+  }, []);
 
   return (
     <div className="flex-column mt">
       <div className="flex-column">
-        <label className="fw-bold txt-clr fs-md">Description (Optional)</label>
+        <label className="fs-md">Description (Optional)</label>
         <input
           type="text"
           placeholder="Enter description"
@@ -292,30 +282,27 @@ function Hover({
   );
 }
 
-type TKeypressDispatchRef = {
-  current: (
-    props: TKeypressAction["props"],
-    dispatch: any,
-    actionId: string
-  ) => void;
-};
+type TKeypressDispatchRef = (
+  props: TKeypressAction["props"],
+  dispatch: any,
+  actionId: string
+) => void;
+
 function Keypress({
   action,
-  current,
   dispatch,
 }: {
   action: TKeypressAction;
-  current: any;
   dispatch: any;
 }) {
-  const keypressDispatchRef: TKeypressDispatchRef = React.useRef(
+  const keypressDispatchRef = React.useRef<TKeypressDispatchRef>(
     debounce((keypressProps, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
         propType: "Keypress",
         props: keypressProps,
         actionId,
-      });
+      } as TEvtWithProps);
     }, DEBOUNCE_DELAY)
   );
 
@@ -339,7 +326,7 @@ function Keypress({
   return (
     <div className="flex-column mt">
       <div className="flex-column">
-        <label className="fw-bold txt-clr fs-md">Key</label>
+        <label className="fs-md">Key</label>
         <div className="flex-row align-center">
           <input
             type="text"
@@ -366,40 +353,37 @@ function Keypress({
 function Upload({ action, current, dispatch }) {
   return (
     <div className="flex-column mt">
-      <label className="fw-bold txt-clr fs-md">Path</label>
+      <label className="fs-md">Path</label>
       <input type="text" placeholder="eg. /documents/file/names.txt" />
     </div>
   );
 }
 
-type TSelectDispatchRef = {
-  current: (
-    props: TSelectAction["props"],
-    dispatch: any,
-    actionId: string
-  ) => void;
-};
+type TSelectDispatchRef = (
+  props: TSelectAction["props"],
+  dispatch: any,
+  actionId: string
+) => void;
+
 function Select({
   action,
-  current,
   dispatch,
 }: {
   action: TSelectAction;
-  current: any;
   dispatch: any;
 }) {
-  const SelectDispatchRef: TSelectDispatchRef = React.useRef(
+  const SelectDispatchRef = React.useRef<TSelectDispatchRef>(
     debounce((props, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
         propType: "Select",
         props,
         actionId,
-      });
+      } as TEvtWithProps);
     }, DEBOUNCE_DELAY)
   );
 
-  function handleSelectChange(e) {
+  const handleSelectChange = React.useCallback((e) => {
     if (e.target.getAttribute("data-proptype") === "select-value") {
       SelectDispatchRef.current(
         { ...action.props, Selected: e.target.value },
@@ -414,12 +398,12 @@ function Select({
         action.id
       );
     }
-  }
+  }, []);
 
   return (
     <div className="flex-column mt">
       <div className="flex-column">
-        <label className="fw-bold txt-clr fs-md">Value</label>
+        <label className="fs-md">Value</label>
         {/* <input type="text" value={selectProps["Value"]} data-proptype="select-value" onChange={handleSelectChange} /> */}
         <select>
           {action.props?.Options?.map((option, index) => {
@@ -433,7 +417,7 @@ function Select({
         </select>
       </div>
       <div className="flex-column">
-        <label className="fw-bold txt-clr fs-md">Description</label>
+        <label className="fs-md">Description</label>
         <input
           type="text"
           value={action.props.Description}
@@ -448,7 +432,7 @@ function Select({
 function Date({ action, current, dispatch }) {
   return (
     <div className="flex-column mt">
-      <label className="fw-bold txt-clr fs-md">Date</label>
+      <label className="fs-md">Date</label>
       <input type="text" />
     </div>
   );
@@ -457,20 +441,28 @@ function Date({ action, current, dispatch }) {
 function Prompts({ action, current, dispatch }) {
   return (
     <div className="flex-column mt">
-      <label className="fw-bold txt-clr fs-md">Response Type</label>
+      <label className="fs-md">Response Type</label>
       <select>
         <option>Accept</option>
         <option>Decline</option>
       </select>
       <div className="flex-column mt txt-clr fs-md">
-        <div className="fw-bold">Response Text (Optional)</div>
+        <div>Response Text (Optional)</div>
         <input type="text" />
       </div>
     </div>
   );
 }
 
-function Code({ action, actions, current, dispatch }) {
+function Code({
+  action,
+  actions,
+  dispatch,
+}: {
+  action: IntAction;
+  actions: TAction[];
+  dispatch: any;
+}) {
   return (
     <Editor
       actions={actions}
@@ -481,6 +473,10 @@ function Code({ action, actions, current, dispatch }) {
   );
 }
 
+function List({ action, dispatch }) {
+  return <></>;
+}
+
 export default function Interaction({
   action,
   actions,
@@ -488,7 +484,7 @@ export default function Interaction({
   dispatch,
 }: {
   action: IntAction;
-  actions: TAction;
+  actions: TAction[];
   current: any;
   dispatch: any;
 }) {
@@ -497,28 +493,17 @@ export default function Interaction({
   return (
     <>
       {actionName != "Prompts" && actionName != "Code" && (
-        <Common action={action} current={current} dispatch={dispatch} />
+        <Common action={action} dispatch={dispatch} />
       )}
       {actionName === "Code" && (
-        <Code
-          action={action}
-          actions={actions}
-          current={current}
-          dispatch={dispatch}
-        />
+        <Code action={action} actions={actions} dispatch={dispatch} />
       )}
-      {actionName === "Type" && (
-        <Type action={action} current={current} dispatch={dispatch} />
-      )}
+      {actionName === "Type" && <Type action={action} dispatch={dispatch} />}
       {actionName === "Date" && (
         <Date action={action} current={current} dispatch={dispatch} />
       )}
-      {actionName === "Click" && (
-        <Click action={action} current={current} dispatch={dispatch} />
-      )}
-      {actionName === "Hover" && (
-        <Hover action={action} current={current} dispatch={dispatch} />
-      )}
+      {actionName === "Click" && <Click action={action} dispatch={dispatch} />}
+      {actionName === "Hover" && <Hover action={action} dispatch={dispatch} />}
       {actionName === "Scroll" && (
         <Scroll action={action} current={current} dispatch={dispatch} />
       )}
@@ -526,17 +511,17 @@ export default function Interaction({
         <Upload action={action} current={current} dispatch={dispatch} />
       )}
       {actionName === "Select" && (
-        <Select action={action} current={current} dispatch={dispatch} />
+        <Select action={action} dispatch={dispatch} />
       )}
       {actionName === "Prompts" && (
         <Prompts action={action} current={current} dispatch={dispatch} />
       )}
       {actionName === "Keypress" && (
-        <Keypress
-          action={action as TKeypressAction}
-          current={current}
-          dispatch={dispatch}
-        />
+        <Keypress action={action as TKeypressAction} dispatch={dispatch} />
+      )}
+
+      {actionName === "List" && (
+        <List action={action as TListAction} dispatch={dispatch} />
       )}
     </>
   );

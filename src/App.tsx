@@ -1,7 +1,7 @@
 import ChromeWorkflow from "./templates/ChromeWorkflow";
 // import WebkitWorkflow from "./templates/WebkitWorkflow";
 import { useMachine } from "@xstate/react";
-import { AppStateMachine } from "./AppState/state.js";
+import { AppStateMachine } from "./AppState/state";
 
 // APP STYLES
 import appCss from "./App.css?inline";
@@ -28,11 +28,11 @@ const combinedStyles =
 
 function App() {
   const [current, send, service] = useMachine(AppStateMachine);
-  const isWebkit =
-    /Safari/.test(navigator.userAgent) &&
-    /Apple Computer/.test(navigator.vendor);
-  const isChrome =
-    /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+  // const isWebkit =
+  //   /Safari/.test(navigator.userAgent) &&
+  //   /Apple Computer/.test(navigator.vendor);
+  // const isChrome =
+  //   /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
 
   // if(isWebkit)
   //   return (
@@ -42,6 +42,7 @@ function App() {
   //   );
 
   // else if(isChrome)
+  type Tc = typeof current;
   return (
     <AddStyle style={combinedStyles}>
       <ChromeWorkflow current={current} send={send} service={service} />

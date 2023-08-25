@@ -1,27 +1,31 @@
-export default function Conditionals({
-  conditionType,
-  actions,
-  actionId,
-  dispatch,
-}) {
-  const GeneralConditionDefaultTemplate = {
-    selectedType: "Element",
-    selectedOption: "IsVisible",
-    requiresCheck: true,
-    checkValue: "",
-  };
+import {
+  ConditionalAction,
+  GeneralCondition,
+  OperatorCondition,
+  SelectableConditions,
+} from "../Types/ActionTypes/Conditional Actions";
+import { TEvtWithProps } from "../Types/State Types/StateEvents";
+import React from "react";
 
-  function handleOperator(conditionType, operator, actionId) {
-    dispatch({ type: "ADD_CONDITION_OPERATOR", actionId, selection: operator });
-  }
+export default function Conditionals({
+  action,
+  dispatch,
+}: {
+  action: ConditionalAction;
+  dispatch: any;
+}) {
+  const handleOperatorClick = React.useCallback((operator: "AND" | "OR") => {
+    const PAYLOAD: TEvtWithProps = {
+      type: "ADD_CONDITION_OPERATOR",
+      actionId: action.id,
+      selection: operator,
+    };
+    dispatch(PAYLOAD);
+  }, []);
 
   return (
     <>
-      <ConditionItems
-        actions={actions}
-        actionId={actionId}
-        dispatch={dispatch}
-      />
+      <ConditionItems action={action} dispatch={dispatch} />
 
       {/* Description */}
       <div className="flex-row align-center justify-center flex-1 mt">
@@ -31,26 +35,50 @@ export default function Conditionals({
 
       {/* Operator Buttons */}
       <div className="flex-row align-center justify-center mt">
-        <button
-          className="flex-1"
-          onClick={() => handleOperator(conditionType, "AND", actionId)}
-        >
-          {" "}
-          + AND{" "}
+        <button className="flex-1" onClick={() => handleOperatorClick("AND")}>
+          + AND
         </button>
-        <button
-          className="flex-1"
-          onClick={() => handleOperator(conditionType, "OR", actionId)}
-        >
-          {" "}
-          + OR{" "}
+        <button className="flex-1" onClick={() => handleOperatorClick("OR")}>
+          + OR
         </button>
       </div>
     </>
   );
 }
 
-function OperatorItem({ selectedOperator }) {
+function ConditionItems({
+  action,
+  dispatch,
+}: {
+  action: ConditionalAction;
+  dispatch: any;
+}) {
+  return (
+    <>
+      {action &&
+        action["conditions"].map((condition: SelectableConditions, index) => (
+          <div key={index}>
+            {"type" in condition ? (
+              <OperatorItem selectedOperator={condition} />
+            ) : (
+              <Condition
+                condition={condition}
+                index={index}
+                actionId={action.id}
+                dispatch={dispatch}
+              />
+            )}
+          </div>
+        ))}
+    </>
+  );
+}
+
+function OperatorItem({
+  selectedOperator,
+}: {
+  selectedOperator: OperatorCondition;
+}) {
   const bg_clr = selectedOperator.selected === "AND" ? "#368136" : "#a739a7";
   const bg_style = { backgroundColor: bg_clr };
   return (
@@ -65,14 +93,22 @@ function OperatorItem({ selectedOperator }) {
   );
 }
 
-type TConditionsOptionsTemplate = {
-  type: string;
-  options: string[];
-  requiresCheck?: Boolean;
-};
-
-function Condition({ condition, index, actionId, dispatch }) {
-  const ConditionsOptionsTemplate: TConditionsOptionsTemplate[] = [
+function Condition({
+  condition,
+  index,
+  actionId,
+  dispatch,
+}: {
+  condition: GeneralCondition;
+  index: number;
+  actionId: string;
+  dispatch: any;
+}) {
+  const ConditionsOptionsTemplate: {
+    type: string;
+    options: string[];
+    requiresCheck?: Boolean;
+  }[] = [
     {
       type: "Basic",
       options: ["is empty", "is not empty"],
@@ -108,30 +144,48 @@ function Condition({ condition, index, actionId, dispatch }) {
     },
   ];
 
+  const handleConditionOptionChange = React.useCallback((event) => {
+    const selected_condition_value = event.target.value;
+    const selectedOption = event.target.selectedOptions[0].getAttribute(
+      "data-selected-option"
+    );
+    const conditionType = ConditionsOptionsTemplate.filter((cot) =>
+      cot.options.includes(selectedOption)
+    )[0].type;
+
+    const PAYLOAD: TEvtWithProps = {
+      type: "UPDATE_CONDITION",
+      payload: {
+        actionId,
+        index,
+        selection: {
+          value: selected_condition_value,
+          conditionType,
+          selectedOption,
+        },
+      },
+    };
+
+    dispatch(PAYLOAD);
+  }, []);
+
+  const handleConditionValueChange = React.useCallback((event) => {
+    const PAYLOAD: TEvtWithProps = {
+      type: "UPDATE_CONDITION",
+      payload: {
+        index,
+        actionId,
+        checkValue: event.target.value,
+      },
+    };
+    dispatch(PAYLOAD);
+  }, []);
+
   return (
     <div key={index} className="condition-container p-2">
       <div className="flex-row align-center">
         <div className="fs-sm">{condition.selectedType}</div>
-        <select
-          onChange={(event) => {
-            const selected_condition_value = event.target.value;
-            const selectedOption = event.target.selectedOptions[0].getAttribute("data-selected-option");
-            const requiresCheck = JSON.parse(event.target.selectedOptions[0].getAttribute("data-requires-check"));
-            const conditionType = ConditionsOptionsTemplate.filter((cot) => cot.options.includes(selectedOption))[0].type;
-
-            dispatch({
-              type: "UPDATE_CONDITION",
-              actionId,
-              index,
-              selection: {
-                value: selected_condition_value,
-                conditionType,
-                selectedOption,
-                requiresCheck,
-              },
-            });
-          }}
-        >
+        <select onChange={handleConditionOptionChange}>
           {ConditionsOptionsTemplate &&
             ConditionsOptionsTemplate.map((cond_opts, index) => {
               return (
@@ -142,15 +196,14 @@ function Condition({ condition, index, actionId, dispatch }) {
                         key={optIndex}
                         value={option}
                         data-selected-option={option}
-                        data-requires-check={JSON.stringify(
-                          cond_opts.requiresCheck
-                        )}
+                        // data-requires-check={JSON.stringify(
+                        //   cond_opts.requiresCheck
+                        // )}
                         selected={
                           option === condition.selectedOption ? true : false
                         }
                       >
-                        {" "}
-                        {option}{" "}
+                        {option}
                       </option>
                     ))}
                 </optgroup>
@@ -164,41 +217,10 @@ function Condition({ condition, index, actionId, dispatch }) {
           <input
             className="w-100"
             type="text"
-            onChange={(event) => {
-              dispatch({
-                type: "UPDATE_CONDITION",
-                actionId,
-                index,
-                checkValue: event.target.value,
-              });
-            }}
+            onChange={handleConditionValueChange}
           />
         )}
       </div>
     </div>
-  );
-}
-
-function ConditionItems({ actions, actionId, dispatch }) {
-  return (
-    <>
-      {actions &&
-        actions
-          .filter(({ id }) => id === actionId)[0]
-          ["conditions"].map((condition, index) => (
-            <div key={index}>
-              {condition.type === "Operator" ? (
-                <OperatorItem selectedOperator={condition} />
-              ) : (
-                <Condition
-                  condition={condition}
-                  index={index}
-                  actionId={actionId}
-                  dispatch={dispatch}
-                />
-              )}
-            </div>
-          ))}
-    </>
   );
 }
