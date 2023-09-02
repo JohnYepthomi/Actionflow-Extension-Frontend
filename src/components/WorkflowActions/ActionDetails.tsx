@@ -14,6 +14,10 @@ const INT_ACTIONS = [
   "Code",
   "Prompts",
   "List",
+  "Text",
+  "Attribute",
+  "Anchor",
+  "URL",
 ];
 const COND_ACTIONS = ["IF", "WHILE", "END", "ELSE", "BREAK"];
 

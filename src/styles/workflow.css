@@ -67,7 +67,7 @@ li[data-action-type="END"] {
   width: 100%;
   height: 25px;
   padding: 5px 5px 5px 5px;
-  text-align: center;
+  text-align: end; /* was 'center' before */
   color: inherit;
   cursor: pointer;
 }
@@ -85,6 +85,8 @@ li[data-action-type="END"] {
 }
 
 .action-details {
+  border: 3px solid #764d8b63;
+  border-top: none;
   background-color: rgb(41 37 37);
   border-radius: 0 0 3px 3px;
 }

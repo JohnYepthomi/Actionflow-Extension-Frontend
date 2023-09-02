@@ -9,7 +9,11 @@ export type IntActionTypes =
   | "Upload"
   | "Code"
   | "Prompts"
-  | "List";
+  | "List"
+  | "Text"
+  | "Attribute"
+  | "Anchor"
+  | "URL";
 
 /*------------------------------------------------ Interaction Action Props -----------------------------------------------------*/
 
@@ -55,7 +59,16 @@ export type TScrollProp = TCommonProp & {
   Direction: "Top" | "Bottom";
   Description: string;
 };
-export type TListProp = TCommonProp;
+export type TListProp = TCommonProp & { variable: string };
+export type TTextProp = TCommonProp & { variable: string; value: string };
+export type TAttributeProp = TCommonProp & {
+  variable: string;
+  attribute: string;
+  value: string;
+};
+export type TAnchorProp = TCommonProp & { variable: string; value: string };
+export type TURLProp = { variable: string; value: string };
+
 export type IntAction =
   | TClickAction
   | TTypeAction
@@ -67,24 +80,11 @@ export type IntAction =
   | TDateAction
   | TUploadAction
   | TScrollAction
-  | TListAction;
-
-export type TRecordableActions =
-  | "Click"
-  | "Scroll"
-  | "Keypress"
-  | "Type"
-  | "Hover"
-  | "Select"
-  | "SelectTab"
-  | "SelectWindow"
-  | "Navigate"
-  | "NewTab"
-  | "NewWindow"
-  | "CloseWindow"
-  | "CloseTab"
-  | "Back"
-  | "Forward";
+  | TListAction
+  | TTextAction
+  | TAttributeAction
+  | TAnchorAction
+  | TURLAction;
 
 /*------------------------------------------------ Interaction Actions  ------------------------------------------------------------*/
 
@@ -172,5 +172,33 @@ export type TListAction = {
   actionType: "List";
   recorded: boolean;
   props: TListProp;
+  nestingLevel: number;
+};
+export type TTextAction = {
+  id: string;
+  actionType: "Text";
+  recorded: boolean;
+  props: TTextProp;
+  nestingLevel: number;
+};
+export type TAttributeAction = {
+  id: string;
+  actionType: "Attribute";
+  recorded: boolean;
+  props: TAttributeProp;
+  nestingLevel: number;
+};
+export type TAnchorAction = {
+  id: string;
+  actionType: "Anchor";
+  recorded: boolean;
+  props: TAnchorProp;
+  nestingLevel: number;
+};
+export type TURLAction = {
+  id: string;
+  actionType: "URL";
+  recorded: boolean;
+  props: TURLProp;
   nestingLevel: number;
 };

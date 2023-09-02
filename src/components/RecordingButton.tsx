@@ -6,23 +6,26 @@ const RecordingButton = ({ current, dispatch }) => {
 
   console.log("RecordingButton rendered");
 
-  const handleRecord = React.useCallback(async (e) => {
-    console.log("handleRecord(e) called");
-    try {
-      if (!current.matches("recording")) {
-        await messageTab({ message: "start-recording" });
-        dispatch({ type: "START_RECORD" });
-      } else if (current.matches("recording")) {
-        await messageTab({ message: "stop-recording" });
-        dispatch({ type: "STOP_RECORD" });
+  const handleRecord = React.useCallback(
+    async (e) => {
+      console.log("handleRecord(e) called");
+      try {
+        if (current.matches("idle")) {
+          await messageTab({ message: "start-recording" });
+          dispatch({ type: "START_RECORD" });
+        } else if (current.matches("recording")) {
+          await messageTab({ message: "stop-recording" });
+          dispatch({ type: "STOP_RECORD" });
+        }
+      } catch (err) {
+        console.log(
+          "Warning: Possibly Not Runnning in Chrome Extension context. Calling handleRecord fn"
+        );
+        console.log(err);
       }
-    } catch (err) {
-      console.log(
-        "Warning: Possibly Not Runnning in Chrome Extension context. Calling handleRecord fn"
-      );
-      console.log(err);
-    }
-  }, []);
+    },
+    [current]
+  );
 
   return (
     <div className="record-container p-2">

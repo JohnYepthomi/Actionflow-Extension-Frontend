@@ -253,8 +253,10 @@ export const AppStateMachine = createMachine<
       saveToStorage: saveToStorage,
       resolveNesting: assign({
         flowActions: (c: TAppContext, e: TEvtWithProps) => {
-          const val = evauateNesting(c, e);
-          return val;
+          if (c?.flowActions?.length > 0) {
+            const val = evauateNesting(c, e);
+            return val;
+          } else return c.flowActions;
         },
       }),
       updateTab: assign({ flowActions: updateTabAction }),
@@ -271,50 +273,141 @@ function updateInteractionAction(
 
   if (event.type != "UPDATE_INTERACTION") return;
 
-  const interactionType = event.propType;
+  // const interactionType = event.propType; // removed use of propType as we can get that info from previous state
+  const interactionType = context.flowActions.filter(
+    (a) => a.id === event.actionId
+  )[0].actionType;
+
   const actionId = event.actionId;
   switch (interactionType) {
-    case "Common":
-      console.log("in Common case");
-      const newSelector = event.props;
-      console.log({ newSelector });
-      const updatedCommonProps = context.flowActions.map((action) => {
-        if (action.id === actionId && "props" in action) {
+    // case "Common":
+    //   console.log("in Common case");
+    //   const newSelector = event.props;
+    //   console.log({ newSelector });
+    //   const updatedCommonProps = context.flowActions.map((action) => {
+    //     if (action.id === actionId && "props" in action) {
+    //       return {
+    //         ...action,
+    //         props: {
+    //           ...action.props,
+    //           selector: newSelector.selector,
+    //         },
+    //       } as TAction;
+    //     } else return action;
+    //   });
+    //   console.log("updatedCommonProps: ", updatedCommonProps);
+    //   return updatedCommonProps;
+    //   break;
+
+    case "URL":
+      console.log("In URL Update Interaction Switch Case");
+      const newURLProps = event.props;
+      const updatedURLAction = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType === "URL") {
           return {
             ...action,
             props: {
-              ...action.props,
-              selector: newSelector.selector,
+              value: newURLProps?.value ?? action.props.value,
+              variable: newURLProps?.variable ?? action.props.variable,
             },
-          } as TAction;
+          };
         } else return action;
       });
-      console.log("updatedCommonProps: ", updatedCommonProps);
-      return updatedCommonProps;
-      break;
-
+      return updatedURLAction;
+    case "Anchor":
+      console.log("In Link Update Interaction Switch Case");
+      const newLinkProps = event.props;
+      const updatedLinkAction = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType === "Anchor") {
+          return {
+            ...action,
+            props: {
+              nodeName: newLinkProps?.nodeName ?? action.props.nodeName,
+              selector: newLinkProps?.selector ?? action.props.selector,
+              value: newLinkProps?.value ?? action.props.value,
+              variable: newLinkProps?.variable ?? action.props.variable,
+            },
+          };
+        } else return action;
+      });
+      return updatedLinkAction;
+    case "Attribute":
+      console.log("In Attribute Update Interaction Switch Case");
+      const newAttributeProps = event.props;
+      const updatedAttributeAction = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType === "Attribute") {
+          return {
+            ...action,
+            props: {
+              nodeName: newAttributeProps?.nodeName ?? action.props?.nodeName,
+              selector: newAttributeProps?.selector ?? action.props?.selector,
+              value: newAttributeProps?.value ?? action.props?.value,
+              attribute: newAttributeProps?.attribute ?? action.props?.value,
+              variable: newAttributeProps?.variable ?? action.props?.variable,
+            },
+          };
+        } else return action;
+      });
+      return updatedAttributeAction;
+    case "Text":
+      console.log("In Text Update Interaction Switch Case");
+      const newTextProps = event.props;
+      const updatedTextAction = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType === "Text") {
+          return {
+            ...action,
+            props: {
+              nodeName: newTextProps?.nodeName ?? action.props.nodeName,
+              selector: newTextProps?.selector ?? action.props.selector,
+              value: newTextProps?.value ?? action.props.value,
+              variable: newTextProps?.variable ?? action.props.variable,
+            },
+          };
+        } else return action;
+      });
+      return updatedTextAction;
+    case "List":
+      console.log("In List Update Interaction Switch Case");
+      const newListProps = event.props;
+      const updatedListAction = context.flowActions.map((action) => {
+        if (action.id === actionId && action.actionType === "List") {
+          return {
+            ...action,
+            props: {
+              nodeName: newListProps?.nodeName ?? action.props.nodeName,
+              selector: newListProps?.selector ?? action.props.selector,
+              variable: newListProps?.variable ?? action.props.variable,
+            },
+          };
+        } else return action;
+      });
+      return updatedListAction;
     case "Click":
-      console.log("in Click case");
+      console.log("in Click Update Interaction Switch Case");
       const newClickProps = event.props;
       const updatedClickProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Click") {
           return {
             ...action,
             props: {
-              ...action.props,
+              nodeName: newClickProps?.nodeName ?? action.props.nodeName,
+              selector: newClickProps?.selector ?? action.props.selector,
               "Wait For New Page To load":
-                newClickProps["Wait For New Page To load"],
-              "Wait For File Download": newClickProps["Wait For File Download"],
-              Description: newClickProps["Description"],
+                newClickProps["Wait For New Page To load"] ??
+                action.props["Wait For New Page To load"],
+              "Wait For File Download":
+                newClickProps["Wait For File Download"] ??
+                action.props["Wait For File Download"],
+              Description:
+                newClickProps["Description"] ?? action.props["Description"],
             },
           };
         } else return action;
       });
       console.log("updated click props action: ", updatedClickProps);
       return updatedClickProps;
-      break;
     case "Type":
-      console.log("in Type case");
+      console.log("in Type Update Interaction Switch Case");
       const newTypeProps = event.props;
       const updatedTypeProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Type") {
@@ -331,9 +424,8 @@ function updateInteractionAction(
       });
       console.log("updatedTypeProps action: ", updatedTypeProps);
       return updatedTypeProps;
-      break;
     case "Hover":
-      console.log("in Hover case");
+      console.log("in Hover Update Interaction Switch Case");
       const newHoverProps = event.props;
       const updatedHoverProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Hover") {
@@ -348,9 +440,8 @@ function updateInteractionAction(
       });
       console.log("updatedHoverProps action: ", updatedHoverProps);
       return updatedHoverProps;
-      break;
     case "Keypress":
-      console.log("in Keypress case");
+      console.log("in Keypress Update Interaction Switch Case");
       const newKeypressProps = event.props;
       const updatedKeypressProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType == "Keypress") {
@@ -367,27 +458,28 @@ function updateInteractionAction(
       });
       console.log("updatedKeypressProps action: ", updatedKeypressProps);
       return updatedKeypressProps;
-      break;
     case "Select":
-      console.log("in Select case");
+      console.log("in Select Update Interaction Switch Case");
       const newSelectProps = event.props;
       const updatedSelectProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Select") {
           return {
             ...action,
             props: {
-              ...action.props,
-              Selected: newSelectProps["Selected"],
-              Description: newSelectProps["Description"],
+              nodeName: newSelectProps?.nodeName ?? action.props.nodeName,
+              selector: newSelectProps?.selector ?? action.props.selector,
+              Selected: newSelectProps?.Selected ?? action.props.Selected,
+              Options: newSelectProps?.options ?? action.props.Options,
+              Description:
+                newSelectProps?.Description ?? action.props.Description,
             },
           };
         } else return action;
       });
       console.log("updatedSelectProps action: ", updatedSelectProps);
       return updatedSelectProps;
-      break;
     case "Code":
-      console.log("in Code case");
+      console.log("in Code Update Interaction Switch Case");
       const newCodeProps = event.props;
       const updatedCodeProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Code") {
@@ -403,7 +495,6 @@ function updateInteractionAction(
       });
       console.log("updatedCodeProps action: ", updatedCodeProps);
       return updatedCodeProps;
-      break;
     case "Scroll":
       break;
     case "Upload":
@@ -412,6 +503,8 @@ function updateInteractionAction(
       break;
     case "Prompts":
       break;
+    default:
+      return context.flowActions;
   }
 }
 
@@ -423,7 +516,8 @@ function updateTabAction(context, event) {
 }
 
 function actionFromRecording(context, event) {
-  console.log("actionFromRecording");
+  console.log("actionFromRecording, event: ", event);
+
   const actionType = event.actionType;
   let currentAction = null;
 
@@ -458,6 +552,7 @@ function actionFromRecording(context, event) {
       if (
         prevlastAction &&
         ["Type", "Select"].includes(prevlastAction?.actionType) &&
+        "selector" in prevlastAction.props &&
         prevlastAction.props.selector === int_action.props.selector
       )
         return context.flowActions.map((a) => {
@@ -470,11 +565,10 @@ function actionFromRecording(context, event) {
       int_action["id"] = guidGenerator();
       int_action["nestingLevel"] = 0;
       return [...context.flowActions, int_action as IntAction];
-      break;
 
     case "TAB_ACTION":
       const { url, tabId, windowId } = event.payload;
-      const prevActions = context.flowActions;
+      const prevActions: TAction[] = context.flowActions;
       const prevNewTabAction = prevActions[prevActions.length - 1] as TabAction;
       const isLastNewTabAction =
         prevActions.length > 0 &&
@@ -482,12 +576,23 @@ function actionFromRecording(context, event) {
         prevNewTabAction.url === "chrome://new-tab-page/";
       const isNavigateAction = actionType === "Navigate";
 
+      // Check if the last action was a "NewTab" and the current action is a "Navigate" action.
+      // if 'true', update the url prop of the "NewTab" action instead of adding the "Navigate" action as a new action.
       if (isLastNewTabAction && isNavigateAction) {
         prevNewTabAction.url = url;
         return [
           ...prevActions.filter((ac) => ac.id !== prevNewTabAction.id),
           prevNewTabAction,
         ];
+      }
+
+      if (
+        actionType === "NewTab" &&
+        prevActions[0] &&
+        "tabId" in prevActions[0] &&
+        prevActions[0].tabId === tabId
+      ) {
+        return context.flowActions;
       }
 
       const tab_action = {};
@@ -498,11 +603,9 @@ function actionFromRecording(context, event) {
       tab_action["tabId"] = tabId;
       tab_action["windowId"] = windowId;
       return [...context.flowActions, tab_action as TabAction];
-      break;
 
     default:
       return context.flowActions;
-      break;
   }
 }
 
@@ -687,7 +790,7 @@ function evauateNesting(context: TAppContext, event: TEvtWithProps) {
   let PrevIfCount = 0;
   let marginLeft = 0;
   const newActions = changedActions.map((action) => {
-    if (prevAction?.actionType === "IF") {
+    if (prevAction?.actionType === "IF" || prevAction?.actionType === "List") {
       PrevIfCount++;
       nestingLevel++;
       marginLeft += 20;

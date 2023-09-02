@@ -3,49 +3,46 @@ import messageBackground from "../utils/messageBackground";
 import { useEffect, memo } from "react";
 import { TRecordableActions } from "../Types/ActionTypes/Action";
 import { ActionMenu, ActiveTab, RecordingButton, Actions } from "../components";
+import { TEvtWithProps } from "../Types/State Types/StateEvents";
 
 const test = [
-  { id: "anWFdfgd-dl4-kja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acdWD-ddfgl4-kja-sd2", actionType: "Click", nestingLevel: 0 },
+  { id: "anWFdfgd-dl4-kja-s", actionType: "Click", nestingLevel: 0 },
+  { id: "acdWD-ddfgl4-kja-s", actionType: "Click", nestingLevel: 0 },
   { id: "acd-34dl4-qkja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "axr4d-67dl4-kja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dl4NMX-kja-sd2", actionType: "Click", nestingLevel: 0 },
+  { id: "axr4d-67dl4-kja-sd", actionType: "Click", nestingLevel: 0 },
+  { id: "abd-dl4NMX-kja-sd2", actionType: "Click", nestingLevel: 0 },
   { id: "acdS-dl4-,Kkja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-4asdls.DF4-kja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-Sdlass3EEQ4-kja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dSlCCC4s-kja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dl4-kjGGGa-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dlSDSs4JTYJY-k3ja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dl4ASDEEZZ-kja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acasSd-dl4-k6745FGj3a-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dSsl4-kjadsSDGF-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-sdSl4-kja-;P;PIOPUIOsd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dl4-kja-zxfsSDFBCE33d2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dl4S-kasda3sKJKIja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dl4-AAASDG555Skjaa-sd2", actionType: "Click", nestingLevel: 0 },
-  {
-    id: "aAcd-dl4-hgja-sd2",
-    actionType: "Click",
-    nestingLevel: 0,
-  },
-  { id: "acd-dl4-kjasGGGG4da-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dl4-kjamnv-55XXBBsd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acAd-dl4-kja-UUIIDFszd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acdA--kja44M77611-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-A4-kja-KOLOsd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acad-l4-kjaDHIK-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd56A4-kja-sSDFGd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dl2224-k56DSFG3ja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acdl4-Akja-saDFG2H4sb3dsd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-l4-AkCVBTdaaeja-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dkjaA-2SDFQ332z2sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dl4-kAja-66,,,sdasd2", actionType: "Click", nestingLevel: 0 },
-  { id: "cd-dlkja-xA22GFH,M,Gsd2", actionType: "Click", nestingLevel: 0 },
-  { id: "cd-dl4-kja-Aszxfbccd2", actionType: "Click", nestingLevel: 0 },
-  { id: "ac-dl4-kja-xcxas32sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acdl4-kja-qeAr3sfsd2", actionType: "Click", nestingLevel: 0 },
-  { id: "acd-dl4-kjAasdA3xsf-sd2", actionType: "Click", nestingLevel: 0 },
-  { id: "AADFacd-askja-sd2", actionType: "Click", nestingLevel: 0 },
+  { id: "add-4asdls.DF4-kja", actionType: "Click", nestingLevel: 0 },
+  { id: "aed-Sdlass3EEQ4-kj", actionType: "Click", nestingLevel: 0 },
+  { id: "afd-dSlCCC4s-kja-s", actionType: "Click", nestingLevel: 0 },
+  { id: "agd-dl4-kjGGGa-sd2", actionType: "Click", nestingLevel: 0 },
+  { id: "ahd-dlSDSs4JTYJY-k", actionType: "Click", nestingLevel: 0 },
+  { id: "aid-dl4ASDEEZZ-kja", actionType: "Click", nestingLevel: 0 },
+  { id: "ajasSd-dl4-k6745FG", actionType: "Click", nestingLevel: 0 },
+  { id: "akd-dSsl4-kjadsSDG", actionType: "Click", nestingLevel: 0 },
+  { id: "ald-sdSl4-kja-;P;2", actionType: "Click", nestingLevel: 0 },
+  { id: "amd-dl4-kja-zxfsSD", actionType: "Click", nestingLevel: 0 },
+  { id: "and-dl4S-kasda3sKJ", actionType: "Click", nestingLevel: 0 },
+  { id: "aod-dl4-AAASDG555S", actionType: "Click", nestingLevel: 0 },
+  { id: "apcd-dl4-hgja-sd2e", actionType: "Click", nestingLevel: 0 },
+  { id: "aqd-dl4-kjasGGGG4d", actionType: "Click", nestingLevel: 0 },
+  { id: "ard-dl4-kjamnv-55X", actionType: "Click", nestingLevel: 0 },
+  { id: "asAd-dl4-kja-UUIID", actionType: "Click", nestingLevel: 0 },
+  { id: "atdA--kja44M77611-", actionType: "Click", nestingLevel: 0 },
+  { id: "aud-A4-kja-KOLOsd2", actionType: "Click", nestingLevel: 0 },
+  { id: "avad-l4-kjaDHIK-sd", actionType: "Click", nestingLevel: 0 },
+  { id: "awd56A4-kja-sSDFGd", actionType: "Click", nestingLevel: 0 },
+  { id: "axd-dl2224-k56DSFG", actionType: "Click", nestingLevel: 0 },
+  { id: "aydl4-Akja-saDFG2H", actionType: "Click", nestingLevel: 0 },
+  { id: "azd-l4-AkCVBTdaaej", actionType: "Click", nestingLevel: 0 },
+  { id: "ard-dkjaA-2SDFQ332", actionType: "Click", nestingLevel: 0 },
+  { id: "aed-dl4-kAja-66qua", actionType: "Click", nestingLevel: 0 },
+  { id: "cs-dlkja-xA22GFH,M", actionType: "Click", nestingLevel: 0 },
+  { id: "ct-dl4-kja-Aszxfbc", actionType: "Click", nestingLevel: 0 },
+  { id: "ae-dl4-kja-xcxas32", actionType: "Click", nestingLevel: 0 },
+  { id: "addl4-kja-qeAr3sfs", actionType: "Click", nestingLevel: 0 },
+  { id: "aad-dl4-kjAasdA3xs", actionType: "Click", nestingLevel: 0 },
+  { id: "AfDFacd-askja-sd2y", actionType: "Click", nestingLevel: 0 },
 ];
 
 const ChromeWorkflow = ({ current, send, service }) => {
@@ -91,21 +88,38 @@ const ChromeWorkflow = ({ current, send, service }) => {
         payload: JSON.parse(composeData),
       });
   }
+
+  type TRecordedActionFromContentScript = {
+    status: "new-recorded-action";
+    payload: {
+      type: "RECORDED_ACTION";
+      actionType: TRecordableActions;
+      payload: { actionType: TRecordableActions; props: any };
+    };
+  };
+  type TActionUpdateFromContentScript = {
+    status: "element-action-update";
+    payload: TEvtWithProps;
+  };
+
   function handleChromeRuntimeMessages() {
     console.log("handleChromeRuntimeMessages called");
 
-    chrome.runtime.onMessage.addListener(async function (message: {
-      status: string;
-      actionType: TRecordableActions;
-      payload: any;
-    }) {
+    chrome.runtime.onMessage.addListener(async function (
+      message: TRecordedActionFromContentScript | TActionUpdateFromContentScript
+    ) {
       if (message.status === "new-recorded-action") {
-        send({
-          type: "RECORDED_ACTION",
-          actionType: message.actionType,
-          payload: message.payload,
-        });
+        if (message.payload.type !== "RECORDED_ACTION") return;
+
+        send(message.payload);
+      } else if (message.status === "element-action-update") {
+        if (message.payload.type === "UPDATE_INTERACTION") {
+          send(message.payload);
+        }
       }
+
+      // if (message.status === "element-text") {
+      // }
 
       // if (message.status === "current-recording-status") {
       //   send({ type: message.payload ? "START_RECORD" : "STOP_RECORD" });

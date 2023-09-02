@@ -12,7 +12,7 @@ export type TEvtWithProps =
       type: "UPDATE_INTERACTION";
       props: any;
       actionId: string;
-      propType: IntActionTypes | "Common"; // "Common" literal as an exception where we want to update Action Props and common prop is not part of 'type IntActionTypes' but its is a part of Action Props
+      // propType: IntActionTypes | "Common"; // "Common" literal as an exception where we want to update Action Props and common prop is not part of 'type IntActionTypes' but its is a part of Action Props
     }
   | { type: "UPDATE_ACTION_FROM_FRAME"; actions: TAction[] }
   | {

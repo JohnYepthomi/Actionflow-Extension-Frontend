@@ -1,5 +1,6 @@
 import ChromeWorkflow from "./templates/ChromeWorkflow";
 // import WebkitWorkflow from "./templates/WebkitWorkflow";
+// import { inspect } from "@xstate/inspect";
 import { useMachine } from "@xstate/react";
 import { AppStateMachine } from "./AppState/state";
 
@@ -26,11 +27,17 @@ const combinedStyles =
   draganddropStyle +
   conditionalsStyle;
 
+// inspect({
+//   // options
+//   // url: 'https://stately.ai/viz?inspect', // (default)
+//   iframe: false, // open in new window
+// });
+
 function App() {
-  const [current, send, service] = useMachine(AppStateMachine);
   // const isWebkit =
   //   /Safari/.test(navigator.userAgent) &&
   //   /Apple Computer/.test(navigator.vendor);
+  const [current, send, service] = useMachine(AppStateMachine);
   // const isChrome =
   //   /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
 

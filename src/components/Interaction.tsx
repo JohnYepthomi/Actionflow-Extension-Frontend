@@ -9,6 +9,10 @@ import {
   THoverAction,
   TCommonProp,
   TListAction,
+  TTextAction,
+  TAnchorAction,
+  TAttributeAction,
+  TURLAction,
 } from "../Types/ActionTypes/Interaction Actions";
 import { TAction } from "../Types/ActionTypes/Action";
 import { TEvtWithProps } from "../Types/State Types/StateEvents.js";
@@ -32,14 +36,18 @@ function debounce(fn, ms) {
 
 const DEBOUNCE_DELAY = 0;
 
-type TCommonDispatchRef = (
-  props: TCommonProp,
+type TDispatchRef<T> = (
+  props: T extends { props: infer P }
+    ? P
+    : T extends { nodeName: string; selector: string }
+    ? T
+    : never,
   dispatch: any,
   actionId: string
 ) => void;
 
 function Common({ action, dispatch }) {
-  const commomDispatchRef = React.useRef<TCommonDispatchRef>(
+  const commomDispatchRef = React.useRef<TDispatchRef<TCommonProp>>(
     debounce((selector, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
@@ -50,24 +58,43 @@ function Common({ action, dispatch }) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handlePickElement = React.useCallback((actionType: string) => {
-    if (actionType === "List") {
-      console.log("Picking List Element");
-      messageTab({}); // <--------------------<< Message contentScript on the active tab to enable selecting list elements.
-    }
-  }, []);
+  const handlePickElement = React.useCallback(
+    (action: IntAction) => {
+      if (
+        [
+          "Select",
+          "URL",
+          "Click",
+          "List",
+          "Text",
+          "Attribute",
+          "Anchor",
+        ].includes(action.actionType)
+      ) {
+        console.log(
+          "Messaging ContentScript -> 'element-pick', actionType: ",
+          action.actionType
+        );
+        messageTab({ message: "element-pick", payload: action });
+      }
+    },
+    [action]
+  );
 
-  const handleSelectorChange = React.useCallback((e) => {
-    commomDispatchRef.current(
-      { ...action.props, selector: e.target.value },
-      dispatch,
-      action.id
-    );
-  }, []);
+  const handleSelectorChange = React.useCallback(
+    (e) => {
+      commomDispatchRef.current(
+        { ...action.props, selector: e.target.value },
+        dispatch,
+        action.id
+      );
+    },
+    [action]
+  );
 
   return (
     <div className="common flex-column">
-      <div className="fs-md">Selector</div>
+      <div className="fs-md txt-clr">Selector</div>
       <div className="flex-row align-center">
         <input
           className="flex-1"
@@ -76,10 +103,7 @@ function Common({ action, dispatch }) {
           value={action.props.selector}
           onChange={handleSelectorChange}
         />
-        <button
-          className="button-60"
-          onClick={() => handlePickElement(action.actionType)}
-        >
+        <button className="button-60" onClick={() => handlePickElement(action)}>
           Pick
         </button>
       </div>
@@ -87,7 +111,7 @@ function Common({ action, dispatch }) {
   );
 }
 
-function Scroll({ action, current, dispatch }) {
+function Scroll({ action, dispatch }) {
   return (
     <div className="flex-column mt">
       <div className="fs-md">Scroll Direction</div>
@@ -103,14 +127,8 @@ function Scroll({ action, current, dispatch }) {
   );
 }
 
-type TClickDispatchRef = (
-  props: TClickAction["props"],
-  dispatch: any,
-  actionId: string
-) => void;
-
 function Click({ action, dispatch }: { action: TClickAction; dispatch: any }) {
-  const dbounceRef = React.useRef<TClickDispatchRef>(
+  const dbounceRef = React.useRef<TDispatchRef<TClickAction>>(
     debounce((props, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
@@ -121,31 +139,34 @@ function Click({ action, dispatch }: { action: TClickAction; dispatch: any }) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handleClickProps = React.useCallback((e) => {
-    const prop = e.target.getAttribute("data-proptype");
+  const handleClickProps = React.useCallback(
+    (e) => {
+      const prop = e.target.getAttribute("data-proptype");
 
-    if (prop === "Wait For New Page To load") {
-      dbounceRef.current(
-        { ...action.props, "Wait For New Page To load": e.target.checked },
-        dispatch,
-        action.id
-      );
-    }
-    if (prop === "Wait For File Download") {
-      dbounceRef.current(
-        { ...action.props, "Wait For File Download": e.target.checked },
-        dispatch,
-        action.id
-      );
-    }
-    if (prop === "Description") {
-      dbounceRef.current(
-        { ...action.props, Description: e.target.value },
-        dispatch,
-        action.id
-      );
-    }
-  }, []);
+      if (prop === "Wait For New Page To load") {
+        dbounceRef.current(
+          { ...action.props, "Wait For New Page To load": e.target.checked },
+          dispatch,
+          action.id
+        );
+      }
+      if (prop === "Wait For File Download") {
+        dbounceRef.current(
+          { ...action.props, "Wait For File Download": e.target.checked },
+          dispatch,
+          action.id
+        );
+      }
+      if (prop === "Description") {
+        dbounceRef.current(
+          { ...action.props, Description: e.target.value },
+          dispatch,
+          action.id
+        );
+      }
+    },
+    [action]
+  );
 
   return (
     <div className="flex-column mt">
@@ -183,14 +204,8 @@ function Click({ action, dispatch }: { action: TClickAction; dispatch: any }) {
   );
 }
 
-type TTypeDispatchRef = (
-  props: TTypeAction["props"],
-  dispatch: any,
-  actionId: string
-) => void;
-
 function Type({ action, dispatch }: { action: TTypeAction; dispatch: any }) {
-  const dbounceRef = React.useRef<TTypeDispatchRef>(
+  const dbounceRef = React.useRef<TDispatchRef<TTypeAction>>(
     debounce((props, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
@@ -201,22 +216,25 @@ function Type({ action, dispatch }: { action: TTypeAction; dispatch: any }) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handleTypePropChange = React.useCallback((e) => {
-    if (e.target.getAttribute("data-proptype") === "typing-text") {
-      dbounceRef.current(
-        { ...action.props, Text: e.target.value },
-        dispatch,
-        action.id
-      );
-    }
-    if (e.target.getAttribute("data-proptype") === "overwrite-text") {
-      dbounceRef.current(
-        { ...action.props, "Overwrite Existing Text": e.target.checked },
-        dispatch,
-        action.id
-      );
-    }
-  }, []);
+  const handleTypePropChange = React.useCallback(
+    (e) => {
+      if (e.target.getAttribute("data-proptype") === "typing-text") {
+        dbounceRef.current(
+          { ...action.props, Text: e.target.value },
+          dispatch,
+          action.id
+        );
+      }
+      if (e.target.getAttribute("data-proptype") === "overwrite-text") {
+        dbounceRef.current(
+          { ...action.props, "Overwrite Existing Text": e.target.checked },
+          dispatch,
+          action.id
+        );
+      }
+    },
+    [action]
+  );
 
   return (
     <div className="flex-column mt">
@@ -241,14 +259,8 @@ function Type({ action, dispatch }: { action: TTypeAction; dispatch: any }) {
   );
 }
 
-type THoverDispatchRef = (
-  props: THoverAction["props"],
-  dispatch: any,
-  actionId: string
-) => void;
-
 function Hover({ action, dispatch }: { action: THoverAction; dispatch: any }) {
-  const dbounceRef = React.useRef<THoverDispatchRef>(
+  const dbounceRef = React.useRef<TDispatchRef<THoverAction>>(
     debounce((props, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
@@ -259,13 +271,16 @@ function Hover({ action, dispatch }: { action: THoverAction; dispatch: any }) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handlerDescriptionChange = React.useCallback((e) => {
-    dbounceRef.current(
-      { ...action.props, Description: e.target.value },
-      dispatch,
-      action.id
-    );
-  }, []);
+  const handlerDescriptionChange = React.useCallback(
+    (e) => {
+      dbounceRef.current(
+        { ...action.props, Description: e.target.value },
+        dispatch,
+        action.id
+      );
+    },
+    [action]
+  );
 
   return (
     <div className="flex-column mt">
@@ -282,12 +297,6 @@ function Hover({ action, dispatch }: { action: THoverAction; dispatch: any }) {
   );
 }
 
-type TKeypressDispatchRef = (
-  props: TKeypressAction["props"],
-  dispatch: any,
-  actionId: string
-) => void;
-
 function Keypress({
   action,
   dispatch,
@@ -295,7 +304,7 @@ function Keypress({
   action: TKeypressAction;
   dispatch: any;
 }) {
-  const keypressDispatchRef = React.useRef<TKeypressDispatchRef>(
+  const keypressDispatchRef = React.useRef<TDispatchRef<TKeypressAction>>(
     debounce((keypressProps, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
@@ -350,7 +359,7 @@ function Keypress({
   );
 }
 
-function Upload({ action, current, dispatch }) {
+function Upload({ action, dispatch }) {
   return (
     <div className="flex-column mt">
       <label className="fs-md">Path</label>
@@ -359,12 +368,6 @@ function Upload({ action, current, dispatch }) {
   );
 }
 
-type TSelectDispatchRef = (
-  props: TSelectAction["props"],
-  dispatch: any,
-  actionId: string
-) => void;
-
 function Select({
   action,
   dispatch,
@@ -372,7 +375,7 @@ function Select({
   action: TSelectAction;
   dispatch: any;
 }) {
-  const SelectDispatchRef = React.useRef<TSelectDispatchRef>(
+  const SelectDispatchRef = React.useRef<TDispatchRef<TSelectAction>>(
     debounce((props, dispatch, actionId) => {
       dispatch({
         type: "UPDATE_INTERACTION",
@@ -383,22 +386,25 @@ function Select({
     }, DEBOUNCE_DELAY)
   );
 
-  const handleSelectChange = React.useCallback((e) => {
-    if (e.target.getAttribute("data-proptype") === "select-value") {
-      SelectDispatchRef.current(
-        { ...action.props, Selected: e.target.value },
-        dispatch,
-        action.id
-      );
-    }
-    if (e.target.getAttribute("data-proptype") === "select-description") {
-      SelectDispatchRef.current(
-        { ...action.props, Description: e.target.value },
-        dispatch,
-        action.id
-      );
-    }
-  }, []);
+  const handleSelectChange = React.useCallback(
+    (e) => {
+      if (e.target.getAttribute("data-proptype") === "select-value") {
+        SelectDispatchRef.current(
+          { ...action.props, Selected: e.target.value },
+          dispatch,
+          action.id
+        );
+      }
+      if (e.target.getAttribute("data-proptype") === "select-description") {
+        SelectDispatchRef.current(
+          { ...action.props, Description: e.target.value },
+          dispatch,
+          action.id
+        );
+      }
+    },
+    [action]
+  );
 
   return (
     <div className="flex-column mt">
@@ -409,8 +415,7 @@ function Select({
           {action.props?.Options?.map((option, index) => {
             return (
               <option key={index} selected={option === action.props.Selected}>
-                {" "}
-                {option}{" "}
+                {option}
               </option>
             );
           })}
@@ -429,7 +434,7 @@ function Select({
   );
 }
 
-function Date({ action, current, dispatch }) {
+function Date({ action, dispatch }) {
   return (
     <div className="flex-column mt">
       <label className="fs-md">Date</label>
@@ -438,7 +443,7 @@ function Date({ action, current, dispatch }) {
   );
 }
 
-function Prompts({ action, current, dispatch }) {
+function Prompts({ action, dispatch }) {
   return (
     <div className="flex-column mt">
       <label className="fs-md">Response Type</label>
@@ -473,8 +478,240 @@ function Code({
   );
 }
 
-function List({ action, dispatch }) {
-  return <></>;
+function List({ action, dispatch }: { action: TListAction; dispatch: any }) {
+  const ListDispatchRef = React.useRef<TDispatchRef<TListAction>>(
+    debounce((props, dispatch, actionId) => {
+      dispatch({
+        type: "UPDATE_INTERACTION",
+        props,
+        actionId,
+      } satisfies TEvtWithProps);
+    }, DEBOUNCE_DELAY)
+  );
+
+  const handleListChange = React.useCallback(
+    (e) => {
+      ListDispatchRef.current(
+        { ...action.props, variable: e.target.value },
+        dispatch,
+        action.id
+      );
+    },
+    [action]
+  );
+
+  return (
+    <>
+      <div className="flex-column mt txt-clr fs-md">
+        <div className="fs-md">Variable</div>
+        <div className="flex-row mt txt-clr fs-md">
+          <div className="dollar-prefix">$</div>
+          <input
+            className="w-100"
+            value={action.props.variable}
+            onChange={handleListChange}
+            type="text"
+            data-variable="true"
+            placeholder="variable name. Refer to this variable using '$ + variable_name'"
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Text({ action, dispatch }: { action: TTextAction; dispatch: any }) {
+  const TextDispatchRef = React.useRef<TDispatchRef<TTextAction>>(
+    debounce((props, dispatch, actionId) => {
+      dispatch({
+        type: "UPDATE_INTERACTION",
+        props,
+        actionId,
+      } satisfies TEvtWithProps);
+    }, DEBOUNCE_DELAY)
+  );
+
+  const handleTextChange = React.useCallback(
+    (e) => {
+      TextDispatchRef.current(
+        { ...action.props, variable: e.target.value },
+        dispatch,
+        action.id
+      );
+    },
+    [action]
+  );
+
+  return (
+    <>
+      <div className="flex-column mt txt-clr fs-md">
+        <div className="fs-md">Variable</div>
+        <div className="flex-row mt txt-clr fs-md">
+          <div className="dollar-prefix">$</div>
+          <input
+            className="w-100"
+            value={action.props.variable}
+            onChange={handleTextChange}
+            type="text"
+            data-variable="true"
+            placeholder="variable name. Refer to this variable using '$ + variable_name'"
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Attribute({
+  action,
+  dispatch,
+}: {
+  action: TAttributeAction;
+  dispatch: any;
+}) {
+  const AttributeDispatchRef = React.useRef<TDispatchRef<TAttributeAction>>(
+    debounce((props, dispatch, actionId) => {
+      dispatch({
+        type: "UPDATE_INTERACTION",
+        props,
+        actionId,
+      } satisfies TEvtWithProps);
+    }, DEBOUNCE_DELAY)
+  );
+
+  const handleAttributeChange = React.useCallback(
+    (e) => {
+      const propType = e.target.getAttribute("data-proptype");
+      // if (propType !== "attribute" || propType !== "variable") return;
+
+      console.log(
+        "handleAttributeChange propType: ",
+        propType,
+        ", target-value:",
+        e.target.value
+      );
+
+      AttributeDispatchRef.current(
+        { ...action.props, [propType]: e.target.value },
+        dispatch,
+        action.id
+      );
+    },
+    [action]
+  );
+
+  return (
+    <>
+      <div className="flex-column mt txt-clr fs-md">
+        <div className="fs-md">Attribute</div>
+        <input
+          className="w-100"
+          value={action.props.attribute}
+          type="text"
+          data-proptype="attribute"
+          onChange={handleAttributeChange}
+          placeholder="attribute name"
+        />
+        <div className="fs-md">Variable</div>
+        <div className="flex-row mt txt-clr fs-md">
+          <div className="dollar-prefix">$</div>
+          <input
+            className="w-100"
+            value={action.props.variable}
+            onChange={handleAttributeChange}
+            type="text"
+            data-proptype="variable"
+            data-variable="true"
+            placeholder="variable name. Refer to this variable using '$ + variable_name'"
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Link({ action, dispatch }: { action: TAnchorAction; dispatch: any }) {
+  const LinkDispatchRef = React.useRef<TDispatchRef<TAnchorAction>>(
+    debounce((props, dispatch, actionId) => {
+      dispatch({
+        type: "UPDATE_INTERACTION",
+        props,
+        actionId,
+      } satisfies TEvtWithProps);
+    }, DEBOUNCE_DELAY)
+  );
+
+  const handleLinkChange = React.useCallback(
+    (e) => {
+      LinkDispatchRef.current(
+        { ...action.props, variable: e.target.value },
+        dispatch,
+        action.id
+      );
+    },
+    [action]
+  );
+
+  return (
+    <>
+      <div className="flex-column mt txt-clr fs-md">
+        <div className="fs-md">Variable</div>
+        <div className="flex-row mt txt-clr fs-md">
+          <div className="dollar-prefix">$</div>
+          <input
+            className="w-100"
+            value={action.props.variable}
+            onChange={handleLinkChange}
+            type="text"
+            data-variable="true"
+            placeholder="variable name. Refer to this variable using '$ + variable_name'"
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function URL({ action, dispatch }: { action: TURLAction; dispatch: any }) {
+  const URLDispatchRef = React.useRef<TDispatchRef<TURLAction>>(
+    debounce((props, dispatch, actionId) => {
+      dispatch({
+        type: "UPDATE_INTERACTION",
+        props,
+        actionId,
+      } satisfies TEvtWithProps);
+    }, DEBOUNCE_DELAY)
+  );
+
+  const handleURLChange = React.useCallback(
+    (e) => {
+      URLDispatchRef.current(
+        { ...action.props, variable: e.target.value },
+        dispatch,
+        action.id
+      );
+    },
+    [action]
+  );
+
+  return (
+    <>
+      <div className="flex-column mt txt-clr fs-md">
+        <div className="fs-md">Variable</div>
+        <div className="flex-row mt txt-clr fs-md">
+          <div className="dollar-prefix">$</div>
+          <input
+            className="w-100"
+            value={action.props.variable}
+            onChange={handleURLChange}
+            type="text"
+            data-variable="true"
+            placeholder="variable name. Refer to this variable using '$ + variable_name'"
+          />
+        </div>
+      </div>
+    </>
+  );
 }
 
 export default function Interaction({
@@ -492,36 +729,45 @@ export default function Interaction({
 
   return (
     <>
-      {actionName != "Prompts" && actionName != "Code" && (
+      {!["Keypress", "URL", "Prompts", "Code"].includes(actionName) && (
         <Common action={action} dispatch={dispatch} />
       )}
       {actionName === "Code" && (
         <Code action={action} actions={actions} dispatch={dispatch} />
       )}
       {actionName === "Type" && <Type action={action} dispatch={dispatch} />}
-      {actionName === "Date" && (
-        <Date action={action} current={current} dispatch={dispatch} />
-      )}
+      {actionName === "Date" && <Date action={action} dispatch={dispatch} />}
       {actionName === "Click" && <Click action={action} dispatch={dispatch} />}
       {actionName === "Hover" && <Hover action={action} dispatch={dispatch} />}
       {actionName === "Scroll" && (
-        <Scroll action={action} current={current} dispatch={dispatch} />
+        <Scroll action={action} dispatch={dispatch} />
       )}
       {actionName === "Upload" && (
-        <Upload action={action} current={current} dispatch={dispatch} />
+        <Upload action={action} dispatch={dispatch} />
       )}
       {actionName === "Select" && (
         <Select action={action} dispatch={dispatch} />
       )}
       {actionName === "Prompts" && (
-        <Prompts action={action} current={current} dispatch={dispatch} />
+        <Prompts action={action} dispatch={dispatch} />
       )}
       {actionName === "Keypress" && (
         <Keypress action={action as TKeypressAction} dispatch={dispatch} />
       )}
-
       {actionName === "List" && (
         <List action={action as TListAction} dispatch={dispatch} />
+      )}
+      {actionName === "Text" && (
+        <Text action={action as TTextAction} dispatch={dispatch} />
+      )}
+      {actionName === "Attribute" && (
+        <Attribute action={action as TAttributeAction} dispatch={dispatch} />
+      )}
+      {actionName === "Anchor" && (
+        <Link action={action as TAnchorAction} dispatch={dispatch} />
+      )}
+      {actionName === "URL" && (
+        <URL action={action as TURLAction} dispatch={dispatch} />
       )}
     </>
   );

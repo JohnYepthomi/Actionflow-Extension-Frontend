@@ -13,3 +13,10 @@ select {
   background-color: #393939;
   border: none;
 }
+
+.dollar-prefix {
+  display: flex;
+  align-items: center;
+  font-weight: 900;
+  color: crimson;
+}
