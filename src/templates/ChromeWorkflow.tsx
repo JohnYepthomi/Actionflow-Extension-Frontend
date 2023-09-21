@@ -3,7 +3,7 @@ import messageBackground from "../utils/messageBackground";
 import { useEffect, memo } from "react";
 import { TRecordableActions } from "../Types/ActionTypes/Action";
 import { ActionMenu, ActiveTab, RecordingButton, Actions } from "../components";
-import { TEvtWithProps } from "../Types/State Types/StateEvents";
+import { TAppEvents } from "../Schemas/replaceTypes/StateEvents";
 
 const test = [
   { id: "anWFdfgd-dl4-kja-s", actionType: "Click", nestingLevel: 0 },
@@ -45,9 +45,10 @@ const test = [
   { id: "AfDFacd-askja-sd2y", actionType: "Click", nestingLevel: 0 },
 ];
 
-const ChromeWorkflow = ({ current, send, service }) => {
+type TWorkflowParams = { current: any; send: any; service: any };
+const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
   useEffect(() => {
-    const subscription = service.subscribe((state) => {
+    const subscription = service.subscribe((state: any) => {
       console.log("state: ", state.value);
     });
 
@@ -93,13 +94,12 @@ const ChromeWorkflow = ({ current, send, service }) => {
     status: "new-recorded-action";
     payload: {
       type: "RECORDED_ACTION";
-      actionType: TRecordableActions;
       payload: { actionType: TRecordableActions; props: any };
     };
   };
   type TActionUpdateFromContentScript = {
     status: "element-action-update";
-    payload: TEvtWithProps;
+    payload: TAppEvents;
   };
 
   function handleChromeRuntimeMessages() {
@@ -110,8 +110,15 @@ const ChromeWorkflow = ({ current, send, service }) => {
     ) {
       if (message.status === "new-recorded-action") {
         if (message.payload.type !== "RECORDED_ACTION") return;
+        // reshape payload for state event compatibility
 
-        send(message.payload);
+        send({
+          type: "RECORDED_ACTION",
+          payload: {
+            actionType: message.payload.payload.actionType,
+            props: message.payload.payload.props,
+          },
+        });
       } else if (message.status === "element-action-update") {
         if (message.payload.type === "UPDATE_INTERACTION") {
           send(message.payload);
@@ -130,7 +137,7 @@ const ChromeWorkflow = ({ current, send, service }) => {
   type TActiveTabStorageKey = "lastActiveTabData";
   async function getCurentActiveTab() {
     async function asyncStorageGet(item: TActiveTabStorageKey) {
-      return new Promise(function (resolve, reject) {
+      return new Promise<any>(function (resolve, reject) {
         chrome.storage.local.get(item, (data) => {
           resolve(data[item]);
         });
@@ -141,17 +148,23 @@ const ChromeWorkflow = ({ current, send, service }) => {
     chrome.storage.onChanged.addListener((changes, _namespace) => {
       for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
         if (key === "lastActiveTabData") {
-          send({ type: "UPDATE_ACTIVE_TAB", newTabInfo: newValue });
+          send({
+            type: "UPDATE_ACTIVE_TAB",
+            payload: { newTabInfo: newValue },
+          });
         }
       }
     });
 
     const lasActiveData = await asyncStorageGet("lastActiveTabData");
     if (lasActiveData)
-      send({ type: "UPDATE_ACTIVE_TAB", newTabInfo: lasActiveData });
+      send({
+        type: "UPDATE_ACTIVE_TAB",
+        payload: { newTabInfo: lasActiveData },
+      });
   }
 
-  return (
+  return (  
     <div
       id="ported-component"
       className="workflow-container flex-column align-center justify-content"

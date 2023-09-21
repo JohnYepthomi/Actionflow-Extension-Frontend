@@ -1,61 +1,52 @@
 import { InteractionDefinitions } from "../ActionsDefinitions/definitions";
-import React, { useState, memo, useEffect } from "react";
+import React, { useState, memo, ReactNode } from "react";
+import { TAppEvents } from "../Schemas/replaceTypes/StateEvents";
 
 type TMenuCategory = {
   title: String;
   actionDefintions: any; // needs narrowing
-  type: "Interaction" | "Conditionals" | "TabActions" | "Sheet";
   dispatch: any;
 };
 
-function MenuCategory({
-  title,
-  actionDefintions,
-  type,
-  dispatch,
-}: TMenuCategory) {
-  const handleActionClick = React.useCallback((item) => {
-    switch (type) {
-      case "Interaction":
-        dispatch({ type: "INTERACTION", item });
-        break;
-      case "Conditionals":
-        dispatch({ type: "CONDITIONALS", item });
-        break;
-      case "TabActions":
-        dispatch({ type: "TAB_ACTIONS", item });
-        break;
-      case "Sheet":
-        dispatch({ type: "NEW_SHEET", item });
-        break;
-      default:
-        break;
-    }
-  }, []);
+function MenuCategory({ title, actionDefintions, dispatch }: TMenuCategory) {
+  const handleActionClick = React.useCallback(
+    (item: { name: string; svg: () => ReactNode }) => {
+      dispatch({
+        type: "CREATE_ACTION",
+        payload: {
+          actionType: item.name,
+        },
+      } satisfies TAppEvents);
+    },
+    []
+  );
 
   return (
     <div className="w-100 flex-column align-center justify-center">
       <div className="action-title">{title}</div>
       <ul className="interaction-items flex-row align-center justify-center gap-1">
         {actionDefintions &&
-          actionDefintions.map((item, index) => {
-            return (
-              <li key={index} onClick={() => handleActionClick(item)}>
-                {item.svg()}
-                <div>{item.name}</div>
-              </li>
-            );
-          })}
+          actionDefintions.map(
+            (item: { name: string; svg: () => ReactNode }, index: number) => {
+              return (
+                <li key={index} onClick={() => handleActionClick(item)}>
+                  {item.svg()}
+                  <div>{item.name}</div>
+                </li>
+              );
+            }
+          )}
       </ul>
     </div>
   );
 }
 
-const ActionMenu = ({ dispatch }) => {
+type ActionMenuParams = { dispatch: any };
+const ActionMenu = ({ dispatch }: ActionMenuParams) => {
   const [openMenu, setOpenMenu] = useState(false);
 
   const handleActionMenu = React.useCallback(
-    (e) => {
+    (e: any) => {
       const menuParentElement = e.currentTarget;
       if (!openMenu) {
         menuParentElement.style = "left: 0px; ";
@@ -65,14 +56,14 @@ const ActionMenu = ({ dispatch }) => {
         setOpenMenu((state) => (state = false));
       }
 
-      const isVisible = (elem) =>
+      const isVisible = (elem: HTMLElement) =>
         !!elem &&
         !!(
           elem.offsetWidth ||
           elem.offsetHeight ||
           elem.getClientRects().length
         );
-      const outsideClickListener = (event) => {
+      const outsideClickListener = (event: any) => {
         const containsTarget = !menuParentElement.contains(event.target);
         const MenuVisible = isVisible(menuParentElement);
 
@@ -83,10 +74,10 @@ const ActionMenu = ({ dispatch }) => {
         }
       };
       const removeClickListener = () => {
-        document.removeEventListener("click", outsideClickListener);
+        menuParentElement.removeEventListener("click", outsideClickListener);
       };
 
-      document.addEventListener("click", outsideClickListener);
+      menuParentElement.addEventListener("click", outsideClickListener);
     },
     [openMenu]
   );
@@ -112,7 +103,6 @@ const ActionMenu = ({ dispatch }) => {
                 "CloseTab",
               ].includes(a.name)
           )}
-          type="Interaction"
           dispatch={dispatch}
         />
       </li>
@@ -121,7 +111,6 @@ const ActionMenu = ({ dispatch }) => {
         <MenuCategory
           title="SPREADSHEET"
           actionDefintions={[{ name: "Sheet", svg: () => "sheet svg" }]}
-          type="Sheet"
           dispatch={dispatch}
         />
       </li>
@@ -130,9 +119,8 @@ const ActionMenu = ({ dispatch }) => {
         <MenuCategory
           title="CONDITIONALS"
           actionDefintions={InteractionDefinitions.filter((a) =>
-            ["IF", "END"].includes(a.name)
+            ["IF", "WHILE", "END", "ELSE"].includes(a.name)
           )}
-          type="Conditionals"
           dispatch={dispatch}
         />
       </li>
@@ -143,7 +131,6 @@ const ActionMenu = ({ dispatch }) => {
           actionDefintions={InteractionDefinitions.filter((a) =>
             ["Navigate", "NewTab", "SelectTab", "CloseTab"].includes(a.name)
           )}
-          type="TabActions"
           dispatch={dispatch}
         />
       </li>

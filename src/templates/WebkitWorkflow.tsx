@@ -18,8 +18,14 @@ import interactionStyle from "../styles/interactions.css?inline";
 import conditionalsStyle from "../styles/conditionals.css?inline";
 import draganddropStyle from "../styles/draganddrop.css?inline";
 import AddStyle from "../components/AddStyle";
+import AGCommunity from "ag-grid-community/styles/ag-grid.css?inline";
+import AGBalhamDark from "ag-grid-community/styles/ag-theme-balham.min.css?inline";
+import { IconContext } from "react-icons";
+import { logger } from "../../../logger";
 
 const combinedStyles =
+  AGCommunity +
+  AGBalhamDark +
   appCss +
   wfstyle +
   classStyles +
@@ -64,13 +70,20 @@ const Workflow = ({
     globalServices.appService,
     (state) => state.context.db
   );
+
+  logger.log(`[${workflowName}] =====rendered===== WORKFLOW COMPONENT`);
+
   useEffect(() => {
-    console.log(setDispatchWorkflow);
+    // CREATE IF NOT EXISTS: Ensures there is a table named 'workflows' to work with
+    send({ type: "CREATE_WORKFLOW", db: DB});
     setDispatchWorkflow((state) => send);
-    // send({type: "CREATE_TABLE", workflowName, db: DB});
-    if (current.matches("restoring"))
+
+    if (current.matches("restoring")){
       send({ type: "RESTORE_ACTIONS", workflowName, db: DB });
+    }
+
   }, []);
+
   useEffect(() => {
     const subscription = service.subscribe((state) => {
       console.log("state: ", state.value);
@@ -78,6 +91,7 @@ const Workflow = ({
 
     return subscription.unsubscribe;
   }, []);
+
   useEffect(() => {
     setLocalActions((state) => flowActions);
     setRunDisabled((state) => flowActions && flowActions.length > 0);
@@ -88,40 +102,18 @@ const Workflow = ({
 
   return (
     <AddStyle style={combinedStyles}>
-      <div
-        id="ported-component"
-        className="workflow-container flex-column align-center justify-content gap-1"
+      <IconContext.Provider
+        value={{
+          size: "16px",
+          color: "white",
+          className: "global-class-name",
+        }}
       >
-        <ActionMenu dispatch={send} />
-
-        {/* <div>
-          <button
-            className="flex-row align-center justify-content"
-            style={{
-              width: "100%",
-              backgroundColor: "red",
-              color: "white",
-            }}
-            onClick={() =>
-              send({ type: "CLEAR_WORKFLOW", workflowName, db: DB })
-            }
-          >
-            Add To Trash
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-trash2-fill"
-              viewBox="0 0 16 16"
-            >
-              <path d="M2.037 3.225A.703.703 0 0 1 2 3c0-1.105 2.686-2 6-2s6 .895 6 2a.702.702 0 0 1-.037.225l-1.684 10.104A2 2 0 0 1 10.305 15H5.694a2 2 0 0 1-1.973-1.671L2.037 3.225zm9.89-.69C10.966 2.214 9.578 2 8 2c-1.58 0-2.968.215-3.926.534-.477.16-.795.327-.975.466.18.14.498.307.975.466C5.032 3.786 6.42 4 8 4s2.967-.215 3.926-.534c.477-.16.795-.327.975-.466-.18-.14-.498-.307-.975-.466z" />
-            </svg>
-          </button>
-        </div> */}
-
-        <Actions actions={flowActions} dispatch={send} current={current} />
-      </div>
+        <div id="ported-component" className="workflow-container flex-column align-center justify-content gap-1">
+          <ActionMenu dispatch={send}/>
+          <Actions dispatch={send} current={current}/>
+        </div>
+      </IconContext.Provider>
     </AddStyle>
   );
 };

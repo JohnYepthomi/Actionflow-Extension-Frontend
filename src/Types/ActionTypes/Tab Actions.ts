@@ -11,8 +11,11 @@ export type TabActionTypes =
 export type TabAction = {
   id: string;
   actionType: TabActionTypes;
-  url?: string;
-  tabId?: string;
-  windowId?: string;
   nestingLevel: number;
+  recorded: boolean;
+  props: {
+    url?: string;
+    tabId?: string;
+    windowId?: string;
+  };
 };

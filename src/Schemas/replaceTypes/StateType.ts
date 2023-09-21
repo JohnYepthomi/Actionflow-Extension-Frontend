@@ -1,8 +1,8 @@
-import type { TAction } from "../ActionTypes/Action";
+import type { TAction } from "./Actions";
 
 export interface TAppContext {
   flowActions: TAction[];
-  activeTab: string |undefined;
+  activeTab: string | undefined;
 }
 
 export type TAppState<T> =

@@ -60,6 +60,10 @@
   gap: 5px;
 }
 
+.gap-7 {
+  gap: 7px;
+}
+
 /* -------------- Margin ------------- */
 
 .mt {
@@ -80,6 +84,10 @@
 
 .mb-1 {
   margin-bottom: 3px;
+}
+
+.ms-5 {
+  margin-left: 5px;
 }
 
 /* -------------- Padding ------------- */

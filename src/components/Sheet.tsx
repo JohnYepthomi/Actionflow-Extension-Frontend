@@ -30,7 +30,7 @@ const Sheet = () => {
   );
 
   // Example of consuming Grid Event
-  const cellClickedListener = useCallback((event) => {
+  const cellClickedListener = useCallback((event: any) => {
     console.log("cellClicked", event);
   }, []);
 
@@ -42,7 +42,7 @@ const Sheet = () => {
   }, []);
 
   // Example using Grid's API
-  const buttonListener = useCallback((e) => {
+  const buttonListener = useCallback((e: any) => {
     if (gridRef.current) {
       gridRef.current.api.deselectAll();
     }

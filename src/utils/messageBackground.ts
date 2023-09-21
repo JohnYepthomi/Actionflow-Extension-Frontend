@@ -1,5 +1,5 @@
-export default function messageBackground(message) {
-  return new Promise((resolve, reject) => {
+export default function messageBackground(message: any) {
+  return new Promise<any>((resolve, reject) => {
     chrome.runtime.sendMessage(message, (response) => {
       if (chrome.runtime.lastError) {
         // Handle any error that occurred during message sending

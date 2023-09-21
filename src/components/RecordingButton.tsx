@@ -1,13 +1,14 @@
 import messageTab from "../utils/messageTab";
 import React from "react";
 
-const RecordingButton = ({ current, dispatch }) => {
+type TRecordingButtonParams = { current: any; dispatch: any };
+const RecordingButton = ({ current, dispatch }: TRecordingButtonParams) => {
   const { activeTab } = current.context;
 
   console.log("RecordingButton rendered");
 
   const handleRecord = React.useCallback(
-    async (e) => {
+    async (e: any) => {
       console.log("handleRecord(e) called");
       try {
         if (current.matches("idle")) {

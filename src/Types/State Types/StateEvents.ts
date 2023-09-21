@@ -1,12 +1,12 @@
-import type { TAction } from "../ActionTypes/Action";
+import type { TAction, TRecordableActions } from "../ActionTypes/Action";
 import { IntActionTypes } from "../ActionTypes/Interaction Actions";
 
-export type TEvtWithProps =
+export type TEvtsWithProps =
   | { type: "ADD_CONDITION_OPERATOR"; actionId: string; selection: string }
   | { type: "DRAG_EVENT"; payload: { dragInfo: TAction[] } }
   | {
-      type: "INTERACTION" | "CONDITIONALS";
-      item: string;
+      type: "INTERACTION" | "CONDITIONALS" | "TAB_ACTIONS";
+      item: { name: string; svg: any };
     }
   | {
       type: "UPDATE_INTERACTION";
@@ -28,12 +28,18 @@ export type TEvtWithProps =
             };
           }
         | { actionId: string; index: number; checkValue: string };
+    }
+  | {
+      type: "UPDATE_ACTIVE_TAB";
+      newTabInfo: any;
+    }
+  | {
+      type: "TAB_ACTIONS_UPDATE";
+      updated_action: any;
     };
 
-export type Tidle = {
+export type TIdleEvts = {
   type:
-    | "TAB_ACTIONS_UPDATE"
-    | "UPDATE_ACTIVE_TAB"
     | "START_RECORD"
     | "CREATE_TABLE"
     | "INSERT_TO_DB"
@@ -41,15 +47,24 @@ export type Tidle = {
     | "NEW_SHEET";
 };
 
-export type TrestoreEvt = { type: "RESTORE_ACTIONS" };
+export type TRestoreEvt = { type: "RESTORE_ACTIONS" };
 
-export type TrecordingEvt = {
-  type:
-    | "RECORDED_ACTION"
-    | "STOP_RECORDING"
-    | "ERROR"
-    | "UPDATE_RECORDED_ACTION"
-    | "STOP_RECORD";
+export type TRecordingEvtsWithProps = {
+  type: "RECORDED_ACTION" | "ERROR" | "UPDATE_RECORDED_ACTION";
+  actionType: string;
+  payload: {
+    actionType: TRecordableActions;
+    props: any;
+  };
 };
 
-export type TAppEvts = Tidle | TrecordingEvt | TrestoreEvt | TEvtWithProps;
+export type TRecordingEvts = {
+  type: "STOP_RECORD";
+};
+
+export type TAppEvts =
+  | TIdleEvts
+  | TRecordingEvtsWithProps
+  | TRecordingEvts
+  | TRestoreEvt
+  | TEvtsWithProps;

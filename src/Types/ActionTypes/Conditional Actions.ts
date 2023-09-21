@@ -1,12 +1,12 @@
 /*------------------------------------------------ Conditional Action Type ----------------------------------------------------*/
-export type CondEndEventTypes = "END" | "BREAK";
+export type CondEndEventTypes = "ELSE" | "END" | "BREAK";
 export type CondEndAction = {
   id: string;
   actionType: CondEndEventTypes;
   nestingLevel: number;
 };
 
-export type CondEventTypes = "IF" | "ELSE" | "WHILE";
+export type CondEventTypes = "IF" | "WHILE";
 export type ConditionalAction = {
   id: string;
   actionType: CondEventTypes;
@@ -35,7 +35,7 @@ export type GeneralCondition = {
   checkValue: string;
 };
 export type OperatorCondition = {
-  type: "IF" | "WHILE";
+  // type: "IF" | "WHILE";
   selected: Operator;
 };
 

@@ -9,7 +9,7 @@ import {
   TURLAction,
 } from "./Interaction Actions";
 import { ConditionalAction, CondEndAction } from "./Conditional Actions";
-import { TabAction } from "./Tab Actions";
+import { TabAction, TabActionTypes } from "./Tab Actions";
 import { SheetAction } from "./Sheet Action";
 
 export type TAction =
@@ -39,15 +39,4 @@ export type TRecordableActions =
   | "Date"
   | "Upload"
   | "Prompts"
-  | TTabActions;
-
-type TTabActions =
-  | "SelectTab"
-  | "SelectWindow"
-  | "Navigate"
-  | "NewTab"
-  | "NewWindow"
-  | "CloseWindow"
-  | "CloseTab"
-  | "Back"
-  | "Forward";
+  | TabActionTypes;

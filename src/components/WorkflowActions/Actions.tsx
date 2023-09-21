@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState,useCallback, memo } from "react";
 import ActionHeader from "./ActionHeader";
 import ActionDetails from "./ActionDetails";
 import { motion, useAnimationControls } from "framer-motion";
-import { TAction } from "../../Types/ActionTypes/Action";
+import { TAction } from "../../Schemas/replaceTypes/Actions";
+
+//WEBKIT ACTIONS IMPORT
+import Card from '../../../../components/SortableList/Card';
+import update from 'immutability-helper';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { logger } from "../../../../logger";
 
 function getAnimationClassNames<T extends number>(
   index: T,
@@ -26,7 +33,6 @@ const ChromeActions = ({
   current,
   dispatch,
 }: {
-  actions: TAction[];
   dispatch: any;
   current: any;
 }) => {
@@ -40,26 +46,24 @@ const ChromeActions = ({
   const controls = useAnimationControls();
 
   // CHROME DRAG EVENTS HANDLERS
-  const handleDragStart = (e, index) => {
+  const handleDragStart = (e: any, index: number) => {
     console.log("handleDragStart");
-    e.dataTransfer.effectAllowed = "move";
-    const clonedNode = e.target.cloneNode(true);
-    e.dataTransfer.setDragImage(clonedNode, 0, 0);
-    clonedNode.style.opacity = "0.5";
-    // e.dataTransfer.setData('text/plain', 'some_dummy_data'); // firefox
-    // itemColor = e.target.style.backgroundColor;
-    // e.target.style.opacity = "0.001";
-
-    // tempMarginLeft.current = e.target.style.marginLeft;
-    // e.target.style.marginLeft = "";
+    // e.dataTransfer.effectAllowed = "move";
+    // const clonedNode = e.target.cloneNode(true);
+    // e.dataTransfer.setDragImage(clonedNode, 0, 0);
+    // clonedNode.style.opacity = "0.5";
+    e.dataTransfer.setData('text/plain', 'some_dummy_data'); // firefox
+    itemColor = e.target.style.backgroundColor;
+    tempMarginLeft.current = e.target.style.marginLeft;
+    e.target.style.marginLeft = "";
     draggedPos.current = index;
     initialDraggedPos.current = index;
   };
-  const handleDragEnter = (e, index) => {
+  const handleDragEnter = (e: any, index: number) => {
     if (enterPos.current) return;
     else enterPos.current = index;
 
-    if (draggedPos.current !== index) {
+    if (draggedPos.current && draggedPos.current !== index) {
       const t0 = performance.now();
 
       let newItems = [...localActions];
@@ -76,19 +80,17 @@ const ChromeActions = ({
       setLocalActions((state) => newItems);
     }
   };
-  const handleDragLeave = (e, index) => {
-    enterPos.current = null;
+  const handleDragLeave = (e: any, index: number) => {
+    enterPos.current = undefined;
   };
-  const handleDragEnd = (e, index) => {
-    // e.target.style.opacity = "1";
-    // e.target.style.backgroundColor = itemColor;
-
-    // e.target.style.marginLeft = tempMarginLeft.current;
+  const handleDragEnd = (e: any, index: number) => {
+    e.target.style.backgroundColor = itemColor;
+    e.target.style.marginLeft = tempMarginLeft.current;
 
     if (initialDraggedPos.current !== draggedPos.current) {
       dispatch({
         type: "DRAG_EVENT",
-        payload: { dragInfo: localActions },
+        payload: localActions,
       });
     }
 
@@ -107,10 +109,10 @@ const ChromeActions = ({
 
   function resetRefs() {
     console.log("resetting refs...");
-    enterPos.current = null;
-    movedPos.current = null;
-    draggedPos.current = null;
-    initialDraggedPos.current = null;
+    enterPos.current = undefined;
+    movedPos.current = undefined;
+    draggedPos.current = undefined;
+    initialDraggedPos.current = undefined;
   }
 
   return (
@@ -128,8 +130,8 @@ const ChromeActions = ({
             onDragEnd={(e) => handleDragEnd(e, index)}
             className={getAnimationClassNames(
               index,
-              movedPos.current,
-              draggedPos.current
+              movedPos.current!,
+              draggedPos.current!
             )}
             style={{
               position: "relative",
@@ -154,129 +156,67 @@ const ChromeActions = ({
   );
 };
 
-const WebkitActions = ({
-  actions,
-  dispatch,
-  current,
-}: {
-  actions: TAction[];
-  dispatch: any;
-  current: any;
-}) => {
-  const [localActions, setLocalActions] = useState(actions); // local state is required to facilitate drag and drop
-  const initialDraggedPos: { current: number } = useRef();
-  const movedPos: { current: number } = useRef();
-  const draggedPos: { current: number } = useRef();
-  const enterPos: { current: number } = useRef();
-  const tempMarginLeft = useRef();
-  const controls = useAnimationControls();
 
-  // :::::::::::  WEBKIT Compatble Handlers :::::::::::
-  const handleDragStart = (e, index) => {
-    console.log("handleDragStart");
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setDragImage(transparentImage, 0, 0);
-    e.dataTransfer.setData("text/plain", "some_dummy_data"); // webkit
-    itemColor = e.target.style.backgroundColor;
-    e.target.style.backgroundColor = "#4a4a4a";
-    // e.target.style.opacity = "0.001";
+//WEBKIT ACTIONS
+const SortableActions = ({ current, dispatch }:{current: any, dispatch: any}) => {
+  const [cards, setCards] = useState<TAction>(current.context.flowActions);
+  // const [hasMoved, setHasMoved] = useState<boolean>(false);
+  const moveCard = useCallback((dragIndex, hoverIndex) => {
+      // setHasMoved(state => !state);
+      setCards((prevCards) =>
+      update(prevCards, {
+          $splice: [
+          [dragIndex, 1],
+          [hoverIndex, 0, prevCards[dragIndex]],
+          ],
+      }),
+      )
+  }, []);
+  
+  useEffect(()=>{
+      setCards(current.context.flowActions);
+  },[current.context.flowActions]);
 
-    tempMarginLeft.current = e.target.style.marginLeft;
-    e.target.style.marginLeft = "";
-    draggedPos.current = index;
-    initialDraggedPos.current = index;
-  };
-  const handleDragEnter = (e, index) => {
-    if (enterPos.current) return;
-    else enterPos.current = index;
+  // useEffect(()=>{
+  //     if(hasMoved){
+  //         // dispatch({type: "DRAG_EVENT", payload: cards});
+  //     }
+  // },[hasMoved])
 
-    if (draggedPos.current !== index) {
-      const t0 = performance.now();
+  logger.log("=====rendered===== SORTABLEACTIONS COMPONENT")
 
-      let newItems = [...localActions];
-      const dragItem = newItems[draggedPos.current];
-      newItems.splice(draggedPos.current, 1);
-      newItems.splice(index, 0, dragItem);
-
-      movedPos.current = draggedPos.current;
-      draggedPos.current = index;
-
-      const t1 = performance.now();
-      console.log(`Items Switching took ${t1 - t0} milliseconds.`);
-
-      setLocalActions((state) => newItems);
-    }
-  };
-  const handleDragLeave = (e, index) => {
-    enterPos.current = null;
-  };
-  const handleDragEnd = (e, index) => {
-    // e.target.style.opacity = "1";
-    e.target.style.backgroundColor = itemColor;
-    e.target.style.marginLeft = tempMarginLeft.current;
-
-    if (initialDraggedPos.current !== draggedPos.current) {
-      // setLocalActions((state) => EvauateNesting(state));
-      dispatch({
-        type: "DRAG_EVENT",
-        updatedActions: localActions,
-        dragInfo: {
-          initialDraggedPos: initialDraggedPos.current,
-          currentDraggedPos: draggedPos.current,
-        },
-      });
-    }
-
-    resetRefs();
-  };
-
-  useEffect(() => {
-    // console.log("Workflow -> Actions -> localActions: ", localActions);
-    console.log("Actions Component Rerendered");
-    setLocalActions((state) => actions);
-  }, [actions]);
-
-  function resetRefs() {
-    console.log("resetting refs...");
-    enterPos.current = null;
-    movedPos.current = null;
-    draggedPos.current = null;
-    initialDraggedPos.current = null;
-  }
+  const renderCard = useCallback((card, index) => {
+      return (
+          <Card
+              key={card.id}
+              id={card.id}
+              index={index}
+              card={card}
+              moveCard={moveCard}
+              cards={cards}
+              current={current}
+              dispatch={dispatch}
+          />
+      )
+  }, []);
 
   return (
-    <ul className="workflow-ul" style={{ overflowX: "hidden" }}>
-      {localActions.map((action, index) => {
-        const marginLeft = action.nestingLevel * 35;
+      <ul className="workflow-ul" style={{ overflowX: "hidden", overflowY: "scroll" }}>
+          { 
+              cards.map( (card, i) => renderCard(card, i))
+          }
+      </ul>
+  );
+}
+const WebkitActions = ({ dispatch, current }:{current: any, dispatch: any}) => {
+  console.log("======rendered====== ACTIONS COMPONENT , flowActions: ", current.context.flowActions);
 
-        return (
-          <li
-            key={action.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragEnter={(e) => handleDragEnter(e, index)}
-            onDragLeave={(e) => handleDragLeave(e, index)}
-            onDragEnd={(e) => handleDragEnd(e, index)}
-            className={getAnimationClassNames(
-              index,
-              movedPos.current,
-              draggedPos.current
-            )}
-            style={{ position: "relative", marginLeft }}
-          >
-            <ActionHeader action={action} animateControl={controls} />
-            <ActionDetails
-              action={action}
-              localActions={localActions}
-              dispatch={dispatch}
-              current={current}
-            />
-          </li>
-        );
-      })}
-    </ul>
+  return (
+      <DndProvider backend={HTML5Backend}>
+          <SortableActions dispatch={dispatch} current={current}/>
+      </DndProvider>
   );
 };
 
 const finalExp = isWebkit ? WebkitActions : ChromeActions;
-export default finalExp;
+export default memo(finalExp);

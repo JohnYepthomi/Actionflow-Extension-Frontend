@@ -1,24 +1,24 @@
-import {
-  ConditionalAction,
-  GeneralCondition,
-  OperatorCondition,
-  SelectableConditions,
-} from "../Types/ActionTypes/Conditional Actions";
-import { TEvtWithProps } from "../Types/State Types/StateEvents";
+import { TAppEvents } from "../Schemas/replaceTypes/StateEvents";
 import React from "react";
+import {
+  TConditionAction,
+  TGeneralCondition,
+  TOperatorCondition,
+} from "../Schemas/replaceTypes/Actions";
 
-export default function Conditionals({
-  action,
-  dispatch,
-}: {
-  action: ConditionalAction;
+type ConditionParams = {
+  action: TConditionAction;
   dispatch: any;
-}) {
+};
+
+export default function Conditionals({ action, dispatch }: ConditionParams) {
   const handleOperatorClick = React.useCallback((operator: "AND" | "OR") => {
-    const PAYLOAD: TEvtWithProps = {
-      type: "ADD_CONDITION_OPERATOR",
-      actionId: action.id,
-      selection: operator,
+    const PAYLOAD: TAppEvents = {
+      type: "ADD_OPERATOR",
+      payload: {
+        actionId: action.id,
+        selection: operator,
+      },
     };
     dispatch(PAYLOAD);
   }, []);
@@ -46,17 +46,16 @@ export default function Conditionals({
   );
 }
 
-function ConditionItems({
-  action,
-  dispatch,
-}: {
-  action: ConditionalAction;
+type ConitionItemsParams = {
+  action: TConditionAction;
   dispatch: any;
-}) {
+};
+type TSelectableConditions = TGeneralCondition | TOperatorCondition;
+function ConditionItems({ action, dispatch }: ConitionItemsParams) {
   return (
     <>
       {action &&
-        action["conditions"].map((condition: SelectableConditions, index) => (
+        action["conditions"].map((condition: TSelectableConditions, index) => (
           <div key={index}>
             {"type" in condition ? (
               <OperatorItem selectedOperator={condition} />
@@ -74,11 +73,10 @@ function ConditionItems({
   );
 }
 
-function OperatorItem({
-  selectedOperator,
-}: {
-  selectedOperator: OperatorCondition;
-}) {
+type TOperatorParams = {
+  selectedOperator: TOperatorCondition;
+};
+function OperatorItem({ selectedOperator }: TOperatorParams) {
   const bg_clr = selectedOperator.selected === "AND" ? "#368136" : "#a739a7";
   const bg_style = { backgroundColor: bg_clr };
   return (
@@ -99,19 +97,19 @@ function Condition({
   actionId,
   dispatch,
 }: {
-  condition: GeneralCondition;
+  condition: TGeneralCondition;
   index: number;
   actionId: string;
   dispatch: any;
 }) {
   const ConditionsOptionsTemplate: {
-    type: string;
+    type: "Basic" | "Element" | "Text" | "Number";
     options: string[];
     requiresCheck?: Boolean;
   }[] = [
     {
       type: "Basic",
-      options: ["is empty", "is not empty"],
+      options: ["isEmpty", "IsNotEmpty"],
       requiresCheck: true,
     },
     {
@@ -122,45 +120,45 @@ function Condition({
     {
       type: "Text",
       options: [
-        "contains",
-        "Does not contain",
-        "is exactly",
-        "starts with",
-        "ends with",
+        "Contains",
+        "NotContains",
+        "IsExactly",
+        "StartsWith",
+        "EndsWith",
       ],
       requiresCheck: true,
     },
     {
       type: "Number",
       options: [
-        "greater than",
-        "greater than or equal to",
-        "less than",
-        "less than or equal to",
-        "equal to",
-        "not equal to",
+        "GreaterThan",
+        "GreaterThanEqualTo",
+        "LessThan",
+        "LessThanEqualTo",
+        "IsEqualTo",
+        "IsNotEqualTo",
       ],
       requiresCheck: true,
     },
   ];
 
-  const handleConditionOptionChange = React.useCallback((event) => {
+  const handleConditionOptionChange = React.useCallback((event: any) => {
     const selected_condition_value = event.target.value;
     const selectedOption = event.target.selectedOptions[0].getAttribute(
       "data-selected-option"
     );
-    const conditionType = ConditionsOptionsTemplate.filter((cot) =>
+    const selectedType = ConditionsOptionsTemplate.filter((cot) =>
       cot.options.includes(selectedOption)
     )[0].type;
 
-    const PAYLOAD: TEvtWithProps = {
+    const PAYLOAD: TAppEvents = {
       type: "UPDATE_CONDITION",
       payload: {
         actionId,
         index,
         selection: {
           value: selected_condition_value,
-          conditionType,
+          selectedType,
           selectedOption,
         },
       },
@@ -169,8 +167,8 @@ function Condition({
     dispatch(PAYLOAD);
   }, []);
 
-  const handleConditionValueChange = React.useCallback((event) => {
-    const PAYLOAD: TEvtWithProps = {
+  const handleConditionValueChange = React.useCallback((event: any) => {
+    const PAYLOAD: TAppEvents = {
       type: "UPDATE_CONDITION",
       payload: {
         index,

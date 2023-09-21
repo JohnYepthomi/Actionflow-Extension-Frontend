@@ -1,6 +1,7 @@
 import GlobeIcon from "../assets/globe";
 
-export default function ActiveTab({ current }) {
+type ActiveTabParams = { current: any };
+export default function ActiveTab({ current }: ActiveTabParams) {
   const { activeTab } = current.context;
 
   if (activeTab)
@@ -24,4 +25,5 @@ export default function ActiveTab({ current }) {
         </div>
       </div>
     );
+  else return <></>;
 }
