@@ -3,6 +3,7 @@ import Conditionals from "../Conditionals";
 import TabActions from "../TabActions";
 import { TAction } from "../../Schemas/replaceTypes/Actions";
 import Sheet from "../Sheet";
+import React from 'react';
 
 const INT_ACTIONS = [
   "Click",
@@ -31,7 +32,7 @@ function ActionDetails({
   dispatch,
   current,
 }: {
-  action: TAction;
+  action: any;
   localActions: TAction[];
   dispatch: any;
   current: any;
@@ -43,14 +44,14 @@ function ActionDetails({
           <div className="action-details flex-column p-2" data-show-details="false">
               {INT_ACTIONS.includes(action.actionType) && (<Interaction action={action} actions={localActions} current={current} dispatch={dispatch}/>)}
 
-              {COND_ACTIONS.includes(action.actionType) && (<Conditionals conditionType="IF" action={action} dispatch={dispatch}/>)}
+              {COND_ACTIONS.includes(action.actionType) && (<Conditionals action={action} dispatch={dispatch}/>)}
 
               {TAB_ACTIONS.includes(action.actionType) && (<TabActions action={action} dispatch={dispatch}/>)}
 
               {action.actionType === "Sheet" && <Sheet />}
           </div>
       );
-  },[])
+  },[action])
 
   // Actions that have Details to display
   if ("props" in action || "conditions" in action || "tabId" in action){

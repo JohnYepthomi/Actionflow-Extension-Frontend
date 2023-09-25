@@ -347,6 +347,7 @@ function updateInteractionAction(
           };
         } else return action;
       });
+      console.log(updatedTextAction);
       return updatedTextAction;
     case "List":
       console.log("In List Update Interaction Switch Case");

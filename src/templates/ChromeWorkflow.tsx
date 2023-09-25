@@ -80,14 +80,16 @@ const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
     }
   }
   async function handleComposeFinish() {
+    localStorage.setItem("composeData", JSON.stringify(current.context.flowActions));
     const composeData = localStorage.getItem("composeData");
     localStorage.setItem("isComposeCompleted", "true");
 
-    if (composeData)
+    if (composeData){
       await messageTab({
         message: "compose-completed",
-        payload: JSON.parse(composeData),
+        payload: current.context.flowActions,
       });
+    }
   }
 
   type TRecordedActionFromContentScript = {
@@ -173,7 +175,8 @@ const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
       <ActiveTab current={current} />
       <RecordingButton current={current} dispatch={send} />
       <Actions dispatch={send} current={current} />
-      {/* <button
+      
+      <button
         style={{
           backgroundColor: "#472749",
           color: "gray",
@@ -183,7 +186,7 @@ const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
         onClick={handleComposeFinish}
       >
         Done
-      </button> */}
+      </button>
     </div>
   );
 };

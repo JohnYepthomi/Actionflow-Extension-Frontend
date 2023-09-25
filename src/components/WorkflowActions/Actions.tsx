@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState,useCallback, memo } from "react";
+import { useEffect, useRef, useState, useCallback, memo } from "react";
 import ActionHeader from "./ActionHeader";
 import ActionDetails from "./ActionDetails";
 import { motion, useAnimationControls } from "framer-motion";
 import { TAction } from "../../Schemas/replaceTypes/Actions";
 
 //WEBKIT ACTIONS IMPORT
-import Card from '../../../../components/SortableList/Card';
-import update from 'immutability-helper';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import { logger } from "../../../../logger";
+// import Card from '../../../../components/SortableList/Card';
+// import update from 'immutability-helper';
+// import { DndProvider } from 'react-dnd';
+// import { HTML5Backend } from 'react-dnd-html5-backend';
+// import { logger } from "../../../../logger";
 
 function getAnimationClassNames<T extends number>(
   index: T,
@@ -44,15 +44,16 @@ const ChromeActions = ({
   const enterPos = useRef<number>();
   const draggedPos = useRef<number>();
   const controls = useAnimationControls();
+  const tempMarginLeft = useRef<string>();
 
   // CHROME DRAG EVENTS HANDLERS
   const handleDragStart = (e: any, index: number) => {
     console.log("handleDragStart");
     // e.dataTransfer.effectAllowed = "move";
-    // const clonedNode = e.target.cloneNode(true);
-    // e.dataTransfer.setDragImage(clonedNode, 0, 0);
-    // clonedNode.style.opacity = "0.5";
-    e.dataTransfer.setData('text/plain', 'some_dummy_data'); // firefox
+    const clonedNode = e.target.cloneNode(true);
+    e.dataTransfer.setDragImage(clonedNode, 0, 0);
+    clonedNode.style.opacity = "0.5";
+    e.dataTransfer.setData("text/plain", "some_dummy_data"); // firefox
     itemColor = e.target.style.backgroundColor;
     tempMarginLeft.current = e.target.style.marginLeft;
     e.target.style.marginLeft = "";
@@ -156,67 +157,68 @@ const ChromeActions = ({
   );
 };
 
+//WEBKIT ACTIONS    ::::: DO NOT DELETE :::::
+// const SortableActions = ({ current, dispatch }:{current: any, dispatch: any}) => {
+//   const [cards, setCards] = useState<TAction>(current.context.flowActions);
+//   // const [hasMoved, setHasMoved] = useState<boolean>(false);
+//   const moveCard = useCallback((dragIndex: number, hoverIndex: number) => {
+//       // setHasMoved(state => !state);
+//       setCards((prevCards) =>
+//       update(prevCards, {
+//           $splice: [
+//           [dragIndex, 1],
+//           [hoverIndex, 0, prevCards[dragIndex]],
+//           ],
+//       }),
+//       )
+//   }, []);
 
-//WEBKIT ACTIONS
-const SortableActions = ({ current, dispatch }:{current: any, dispatch: any}) => {
-  const [cards, setCards] = useState<TAction>(current.context.flowActions);
-  // const [hasMoved, setHasMoved] = useState<boolean>(false);
-  const moveCard = useCallback((dragIndex, hoverIndex) => {
-      // setHasMoved(state => !state);
-      setCards((prevCards) =>
-      update(prevCards, {
-          $splice: [
-          [dragIndex, 1],
-          [hoverIndex, 0, prevCards[dragIndex]],
-          ],
-      }),
-      )
-  }, []);
-  
-  useEffect(()=>{
-      setCards(current.context.flowActions);
-  },[current.context.flowActions]);
+//   useEffect(()=>{
+//       setCards(current.context.flowActions);
+//   },[current.context.flowActions]);
 
-  // useEffect(()=>{
-  //     if(hasMoved){
-  //         // dispatch({type: "DRAG_EVENT", payload: cards});
-  //     }
-  // },[hasMoved])
+//   // useEffect(()=>{
+//   //     if(hasMoved){
+//   //         // dispatch({type: "DRAG_EVENT", payload: cards});
+//   //     }
+//   // },[hasMoved])
 
-  logger.log("=====rendered===== SORTABLEACTIONS COMPONENT")
+//   logger.log("=====rendered===== SORTABLEACTIONS COMPONENT")
 
-  const renderCard = useCallback((card, index) => {
-      return (
-          <Card
-              key={card.id}
-              id={card.id}
-              index={index}
-              card={card}
-              moveCard={moveCard}
-              cards={cards}
-              current={current}
-              dispatch={dispatch}
-          />
-      )
-  }, []);
+//   const renderCard = useCallback((card, index) => {
+//       return (
+//           <Card
+//               key={card.id}
+//               id={card.id}
+//               index={index}
+//               card={card}
+//               moveCard={moveCard}
+//               cards={cards}
+//               current={current}
+//               dispatch={dispatch}
+//           />
+//       )
+//   }, []);
 
-  return (
-      <ul className="workflow-ul" style={{ overflowX: "hidden", overflowY: "scroll" }}>
-          { 
-              cards.map( (card, i) => renderCard(card, i))
-          }
-      </ul>
-  );
-}
-const WebkitActions = ({ dispatch, current }:{current: any, dispatch: any}) => {
-  console.log("======rendered====== ACTIONS COMPONENT , flowActions: ", current.context.flowActions);
+//   return (
+//       <ul className="workflow-ul" style={{ overflowX: "hidden", overflowY: "scroll" }}>
+//           {
+//               cards.map( (card, i) => renderCard(card, i))
+//           }
+//       </ul>
+//   );
+// }
+// const WebkitActions = ({ dispatch, current }:{current: any, dispatch: any}) => {
+//   console.log("======rendered====== ACTIONS COMPONENT , flowActions: ", current.context.flowActions);
 
-  return (
-      <DndProvider backend={HTML5Backend}>
-          <SortableActions dispatch={dispatch} current={current}/>
-      </DndProvider>
-  );
-};
+//   return (
+//       <DndProvider backend={HTML5Backend}>
+//           <SortableActions dispatch={dispatch} current={current}/>
+//       </DndProvider>
+//   );
+// };
 
-const finalExp = isWebkit ? WebkitActions : ChromeActions;
-export default memo(finalExp);
+// const finalExp = isWebkit ? WebkitActions : ChromeActions;
+// export default memo(WebkitActions);
+
+export default memo(ChromeActions);

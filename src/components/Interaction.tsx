@@ -76,7 +76,11 @@ function Common({ action, dispatch }: { action: TIntAction; dispatch: any }) {
 
   const handleSelectorChange = React.useCallback(
     (e: any) => {
-      if ("props" in action && action.actionType !== "URL") {
+      if (
+        "props" in action &&
+        action.actionType !== "URL" &&
+        action.actionType !== "Code"
+      ) {
         commomDispatchRef.current(
           { nodeName: action.props.nodeName, selector: e.target.value },
           dispatch,
@@ -96,7 +100,9 @@ function Common({ action, dispatch }: { action: TIntAction; dispatch: any }) {
           type="text"
           placeholder="Css Selector"
           value={
-            "props" in action && action.actionType !== "URL"
+            "props" in action &&
+            action.actionType !== "URL" &&
+            action.actionType !== "Code"
               ? action.props.selector
               : ""
           }
