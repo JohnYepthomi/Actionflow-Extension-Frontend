@@ -96,6 +96,7 @@ function Common({ action, dispatch }: { action: TIntAction; dispatch: any }) {
       <div className="fs-md txt-clr">Selector</div>
       <div className="flex-row align-center">
         <input
+        id="action-selector"
           className="flex-1"
           type="text"
           placeholder="Css Selector"
@@ -181,7 +182,7 @@ function Click({ action, dispatch }: TClickParams) {
         <input
           type="checkbox"
           defaultChecked={action.props["Wait For New Page To Load"]}
-          data-proptype="Wait For New Page To load"
+          data-proptype="Wait For New Page To Load"
           onChange={handleClickProps}
         />
         Wait for New Page to Load
@@ -431,7 +432,7 @@ function Select({ action, dispatch }: TSelectParams) {
         <select>
           {action.props?.Options?.map((option, index) => {
             return (
-              <option key={index} selected={option === action.props.Selected}>
+              <option key={index} selected={option.toUpperCase() === action.props.Selected.toUpperCase()}>
                 {option}
               </option>
             );
@@ -573,6 +574,7 @@ function Text({ action, dispatch }: TTextParams) {
         <div className="flex-row mt txt-clr fs-md">
           <div className="dollar-prefix">$</div>
           <input
+            id="action-variable"
             className="w-100"
             value={action.props.variable}
             onChange={handleTextChange}
@@ -629,6 +631,7 @@ function Attribute({ action, dispatch }: TAttributeParams) {
       <div className="flex-column mt txt-clr fs-md">
         <div className="fs-md">Attribute</div>
         <input
+          id="attribute"
           className="w-100"
           value={action.props.attribute}
           type="text"

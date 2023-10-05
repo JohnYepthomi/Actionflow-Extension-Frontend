@@ -44,7 +44,7 @@ function ActionDetails({
           <div className="action-details flex-column p-2" data-show-details="false">
               {INT_ACTIONS.includes(action.actionType) && (<Interaction action={action} actions={localActions} current={current} dispatch={dispatch}/>)}
 
-              {COND_ACTIONS.includes(action.actionType) && (<Conditionals action={action} dispatch={dispatch}/>)}
+              {COND_ACTIONS.includes(action.actionType) && (<Conditionals action={action} current={current} dispatch={dispatch}/>)}
 
               {TAB_ACTIONS.includes(action.actionType) && (<TabActions action={action} dispatch={dispatch}/>)}
 

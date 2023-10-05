@@ -1,17 +1,20 @@
 import { TAppEvents } from "../Schemas/replaceTypes/StateEvents";
 import React from "react";
+import { useEffect, useState } from 'react';
 import {
   TConditionAction,
   TGeneralCondition,
   TOperatorCondition,
 } from "../Schemas/replaceTypes/Actions";
+import { TAction } from "../Types/ActionTypes/Action";
 
 type ConditionParams = {
   action: TConditionAction;
+  current: any;
   dispatch: any;
 };
 
-export default function Conditionals({ action, dispatch }: ConditionParams) {
+export default function Conditionals({ action, current, dispatch }: ConditionParams) {
   const handleOperatorClick = React.useCallback((operator: "AND" | "OR") => {
     const PAYLOAD: TAppEvents = {
       type: "ADD_OPERATOR",
@@ -25,7 +28,7 @@ export default function Conditionals({ action, dispatch }: ConditionParams) {
 
   return (
     <>
-      <ConditionItems action={action} dispatch={dispatch} />
+      <ConditionItems action={action} current={current} dispatch={dispatch} />
 
       {/* Description */}
       <div className="flex-row align-center justify-center flex-1 mt">
@@ -48,10 +51,11 @@ export default function Conditionals({ action, dispatch }: ConditionParams) {
 
 type ConitionItemsParams = {
   action: TConditionAction;
+  current: any;
   dispatch: any;
 };
 type TSelectableConditions = TGeneralCondition | TOperatorCondition;
-function ConditionItems({ action, dispatch }: ConitionItemsParams) {
+function ConditionItems({ action, current, dispatch }: ConitionItemsParams) {
   return (
     <>
       {action &&
@@ -63,6 +67,7 @@ function ConditionItems({ action, dispatch }: ConitionItemsParams) {
               <Condition
                 condition={condition}
                 index={index}
+                current={current}
                 actionId={action.id}
                 dispatch={dispatch}
               />
@@ -94,14 +99,19 @@ function OperatorItem({ selectedOperator }: TOperatorParams) {
 function Condition({
   condition,
   index,
+  current,
   actionId,
   dispatch,
 }: {
   condition: TGeneralCondition;
   index: number;
+  current: any;
   actionId: string;
   dispatch: any;
 }) {
+
+  const [variables, setVariables] = useState<string[]|undefined>(["test", "my-texts"]);
+
   const ConditionsOptionsTemplate: {
     type: "Basic" | "Element" | "Text" | "Number";
     options: string[];
@@ -109,7 +119,7 @@ function Condition({
   }[] = [
     {
       type: "Basic",
-      options: ["isEmpty", "IsNotEmpty"],
+      options: ["IsEmpty", "IsNotEmpty"],
       requiresCheck: true,
     },
     {
@@ -179,10 +189,62 @@ function Condition({
     dispatch(PAYLOAD);
   }, []);
 
+  const handleVariableChange = React.useCallback((event: any) => {
+    const PAYLOAD: TAppEvents = {
+      type: "UPDATE_CONDITION",
+      payload: {
+        index,
+        actionId,
+        selection: {
+          selectedVariable: event.target.value,
+        }
+      },
+    };
+    dispatch(PAYLOAD);
+  }, [variables])
+
+  useEffect(()=>{
+    if(Array.isArray(current.flowActions)){
+      let variables = current.flowActions.filter((c: TAction) => "props" in c && c?.props?.variable).map((c: TAction) => "props" in c && c?.props?.variable);
+      if(variables)
+       setVariables(variables);
+    }
+  },[current.flowActions])
+
   return (
     <div key={index} className="condition-container p-2">
-      <div className="flex-row align-center">
+
+      {
+        condition?.selectedType && !["Element", "Code"].includes(condition?.selectedType) && 
+        <select onChange={handleVariableChange} disabled={!variables}>
+          <optgroup label="Variables">
+          {
+            variables &&
+            variables.map((varb, index) => {
+              return (
+                <option
+                  key={index}
+                  value={varb}
+                  data-selected-option={varb}
+                  // data-requires-check={JSON.stringify(
+                  //   varb.requiresCheck
+                  // )}
+                  selected={
+                    varb === condition?.selectedVariable ? true : false
+                  }
+                >
+                  {varb}
+                </option>
+            )})
+          }
+          </optgroup>
+        </select>
+      }
+
+
+      <div className="flex-row align-center mt">
         <div className="fs-sm">{condition.selectedType}</div>
+        
         <select onChange={handleConditionOptionChange}>
           {ConditionsOptionsTemplate &&
             ConditionsOptionsTemplate.map((cond_opts, index) => {

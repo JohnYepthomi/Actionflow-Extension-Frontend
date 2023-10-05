@@ -25,9 +25,6 @@ const isWebkit =
   /Safari/.test(navigator.userAgent) && /Apple Computer/.test(navigator.vendor);
 
 let itemColor = "";
-const transparentImage = new Image();
-transparentImage.src =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42AAAAABJRU5ErkJggg==";
 
 const ChromeActions = ({
   current,

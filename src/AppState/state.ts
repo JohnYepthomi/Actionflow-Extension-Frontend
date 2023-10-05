@@ -415,7 +415,8 @@ function updateInteractionAction(
           return {
             ...action,
             props: {
-              ...action.props,
+              nodeName: newHoverProps?.nodeName ?? action.props.nodeName,
+              selector: newHoverProps?.selector ?? action.props.selector,
               Description: newHoverProps["Description"],
             },
           } as TAction;
@@ -464,6 +465,7 @@ function updateInteractionAction(
     case "Code":
       console.log("in Code Update Interaction Switch Case");
       const newCodeProps = parsedIntAction.data.payload.props;
+      
       const updatedCodeProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Code") {
           return {
@@ -534,11 +536,13 @@ function actionFromRecording(context: TAppContext, event: TAppEvents) {
         "selector" in prevlastAction.props &&
         prevlastAction.props.selector === newRecordedIntAction.props.selector
       ) {
-        return context.flowActions.map((a) => {
+        context.flowActions = context.flowActions.map((a) => {
           if (a.id === prevlastAction.id)
             return { ...a, props: newRecordedIntAction.props };
           else return a;
         });
+
+        return context.flowActions;
       }
 
       context.flowActions.push(parsedIntAction.data);
@@ -813,9 +817,17 @@ function updateCondition(context: TAppContext, event: TAppEvents) {
     if (action.id === actionId && "conditions" in action) {
       const updatedCond = action["conditions"].map((cond, idx: number) => {
         if (idx === actionIndex) {
-          if ("selection" in payload && "selectedType" in cond) {
-            cond["selectedOption"] = payload.selection.selectedOption;
-            cond["selectedType"] = payload.selection.selectedType;
+          if ("selection" in payload) {
+
+            if ("selectedType" in cond && "selectedOption" in payload.selection && "selectedType" in payload.selection) {
+              cond["selectedOption"] = payload.selection.selectedOption ? payload.selection?.selectedOption : cond["selectedOption"];
+              cond["selectedType"] = payload.selection.selectedType ? payload.selection?.selectedType : cond["selectedType"];
+            }
+
+            else if ("selectedVariable" in cond && "selectedVariable" in payload.selection) {
+              cond["selectedVariable"] = payload.selection?.selectedVariable ? payload.selection?.selectedVariable : cond["selectedVariable"];
+            }
+
           } else if ("checkValue" in payload && "checkValue" in cond) {
             cond["checkValue"] = payload.checkValue;
           }

@@ -60,6 +60,7 @@ export const SelectedOptionSchema = z.union([
 ]);
 
 export const GeneralConditionSchema = z.object({
+  selectedVariable: z.string().optional(),
   selectedType: SelectedTypeSchema,
   selectedOption: SelectedOptionSchema,
   requiresCheck: z.boolean(),

@@ -167,6 +167,7 @@ export const TextActionSchema = ActionSchema.merge(
     })
     .required()
 );
+// variable
 export const AttributeActionSchema = ActionSchema.merge(
   z
     .object({
@@ -178,6 +179,7 @@ export const AttributeActionSchema = ActionSchema.merge(
     })
     .required()
 );
+// variable
 export const AnchorActionSchema = ActionSchema.merge(
   z
     .object({

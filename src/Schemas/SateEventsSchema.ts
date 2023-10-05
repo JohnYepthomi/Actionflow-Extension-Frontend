@@ -80,9 +80,10 @@ export const UpdateConditionActionEventSchema = z.object({
       actionId: z.string(),
       index: z.number().int(),
       selection: z.object({
-        selectedOption: SelectedOptionSchema,
-        selectedType: SelectedTypeSchema,
-        value: z.string(),
+        selectedVariable: z.string().optional(),
+        selectedOption: SelectedOptionSchema.optional(),
+        selectedType: SelectedTypeSchema.optional(),
+        value: z.string().optional(),
       }),
     }),
     z.object({
