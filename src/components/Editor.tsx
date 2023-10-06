@@ -122,29 +122,54 @@ export default function Editor({
       } satisfies TUpdateInteractionActionEvent);
     }, 700)
   );
-
   const [code, setCode] = React.useState<TCode>({
     value: actionProps.value,
     vars: actionProps.vars,
   });
+  const [noPrefixLocalCompletions, setNoPrefixLocalCompletions] = React.useState<{label: string, type: string}[]>([]);
 
   function myCompletions(context: any) {
-    // before contains the [from: position where typing started]  and [to: position where the typing ended]
+    /*********************************************************************************
+      before contains only matched string abnd can be null of not match found.
+      [from: position where typing started]  and [to: position where the typing ended]
+    *********************************************************************************/
     let before = context.matchBefore(/\S+/);
 
-    // If completion wasn't explicitly started and there
-    // is no word before the cursor, don't open completions.
+    /*********************************************************************************
+      If completion wasn't explicitly started and there
+      is no any 'matched' word before the cursor, don't open completions.
+    *********************************************************************************/
     if (!context.explicit && !before) return null;
 
-    // if you want to get the currently typed text
-    // const currentlyTyped = context.state.doc.slice(before.from, context.pos);
+    /*********************************************************************************
+     if you want to get the currently typed text
+    *********************************************************************************/
+    //const currentlyTyped = context.state.doc.slice(before.from, context.pos);
 
-    let code_actions =
-      actions && actions.filter((action: any) => action.actionType === "Code");
-    let all_vars;
+    /*********************************************************************************
+      filter code actions from actions.
+    *********************************************************************************/
+    let discardAction = false;
+    let code_actions = actions && actions.filter((action: any, index: number) => {
+      if(!discardAction){
+        if(action.id === actionId && action.actionType === "Code"){
+          discardAction = true;
+        }
 
+        return true;
+      }
+
+      if(discardAction){
+        return false;
+      }
+    });
+
+    let prefixedCompletions = [];
     try {
-      all_vars = code_actions.reduce(
+      /*********************************************************************************
+        Get the variables from code action's props.vars.
+      *********************************************************************************/
+      prefixedCompletions = code_actions.reduce(
         (combined: any, { props }: any, index: any) => {
           if (props && props?.vars) return [...combined, ...props.vars.map((v: any) => {return {label: v, type: "variable"}})] //, apply: v.substring(1) 
           else return [...combined];
@@ -155,33 +180,21 @@ export default function Editor({
       console.error(error);
     }
 
-    // add the keywords
-    all_vars = [...all_vars, ...javascriptKeywords]
+    /*********************************************************************************
+      Add the jskeywords, prefixed and non prefixed Completions
+    *********************************************************************************/
+    prefixedCompletions = [...prefixedCompletions, ...(noPrefixLocalCompletions||[]),...javascriptKeywords]
 
     return {
       from: before ? before.from : context.pos,
-      options: all_vars || [],
+      options: prefixedCompletions,
       // validFor: /^\w*$/,
     };
   }
 
   React.useEffect(() => {
     codeDispatchRef.current(dispatch, code, actionId);
-    console.log("actionProps: ", actionProps);
   }, [code]);
-
-  // const extractVarLabels = (code_string) => {
-  //   const variableRegex = /(?:var|let|const)\s+(\$[\w$]+)/g; // Matches variable names with var, let, or const
-  //   const variables = [];
-    
-  //   let match;
-  //   while ((match = variableRegex.exec(code_string)) !== null) {
-  //     const variableName = match[1]; // The matched variable name
-  //     variables.push({ label: variableName, type: "variable" });
-  //   }
-
-  //   return variables;
-  // };
 
   const extractVarLabels = (code_string: string) => {
     const variableRegex = /(?:var|let|const)\s+([\w$]+)\s*=\s*([^;]+)/g;
@@ -190,18 +203,7 @@ export default function Editor({
     let match;
     while ((match = variableRegex.exec(code_string)) !== null) {
       const variableName = match[1];
-      const variableValueString = match[2].trim();
-      let variableType = typeof undefined;
-
-      try {
-        const tempFunction = new Function(variableValueString);
-        const variableValue = tempFunction();
-        variableType = typeof variableValue;
-      } catch (error) {
-        console.warn("Error in extractVarLabels(), error: ", error);
-      }
-
-      variables.push({ label: variableName, type: variableType });
+      variables.push({ label: variableName, type: 'variable' });
     }
 
     return variables;
@@ -244,11 +246,44 @@ export default function Editor({
       extensions={[
         javascript({ jsx: false }),
         autocompletion({ override: [myCompletions] }),
-      ]} //
+      ]}
       onChange={(value, viewUpdate) => {
         const old_state = viewUpdate.state.toJSON(stateFields); // History
-        const lvars = extractVarLabels(value);
-        setCode((state) => ({ value, vars: lvars.map((a) => a.label) }));
+        let prefixedVars = extractVarLabels(value);
+
+        /******************
+          filter variables
+        *******************/
+        let noPrefixVars: {label: string, type: string}[];
+        if(prefixedVars && prefixedVars.length > 0){
+          noPrefixVars = prefixedVars.filter(v => {
+            console.log({v});
+            if(!v.label.includes("$"))
+              return true;
+            else
+              return false;
+          });
+          prefixedVars = prefixedVars.filter(v => {
+            if(v.label.includes("$"))
+              return true;
+            else
+              return false;
+          });
+        }
+        
+        /***********************************************************************************************
+          'noPrefixVars' is only used for local state, this will not be associated to Code Action Props 
+        ***********************************************************************************************/
+        setNoPrefixLocalCompletions(state => noPrefixVars||[] );
+
+        /************************************************************************************
+         * We only save the prefixed variables to the code state.
+         * The code state will be dispatched to be stored in App State's Code Action Props.
+         * 
+         * @NOTE: Prefixed variables will not be available to previous actions, it will only
+         * be available to following actions from the current action. 
+        *************************************************************************************/
+        setCode((state) => ({ value, vars: prefixedVars.map((a) => a.label) }));
       }}
     />
   );
