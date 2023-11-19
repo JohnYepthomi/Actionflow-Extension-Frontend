@@ -25,7 +25,7 @@ function debounce(fn: any, ms: any) {
   };
 }
 
-const DEBOUNCE_DELAY = 0;
+const DEBOUNCE_DELAY = 300;
 
 type TDispatchRef<T> = (
   props: T extends { props: infer P }
@@ -38,6 +38,14 @@ type TDispatchRef<T> = (
 ) => void;
 
 function Common({ action, dispatch }: { action: TIntAction; dispatch: any }) {
+  const [selector, setSelector] = React.useState(
+    "props" in action &&
+    action.actionType !== "URL" &&
+    action.actionType !== "Code"
+      ? action.props.selector
+      : ""
+  );
+
   const commomDispatchRef = React.useRef<TDispatchRef<TCommonProps>>(
     debounce((selector: any, dispatch: any, actionId: any) => {
       dispatch({
@@ -81,6 +89,7 @@ function Common({ action, dispatch }: { action: TIntAction; dispatch: any }) {
         action.actionType !== "URL" &&
         action.actionType !== "Code"
       ) {
+        setSelector(e.target.value);
         commomDispatchRef.current(
           { nodeName: action.props.nodeName, selector: e.target.value },
           dispatch,
@@ -100,13 +109,7 @@ function Common({ action, dispatch }: { action: TIntAction; dispatch: any }) {
           className="flex-1"
           type="text"
           placeholder="Css Selector"
-          value={
-            "props" in action &&
-            action.actionType !== "URL" &&
-            action.actionType !== "Code"
-              ? action.props.selector
-              : ""
-          }
+          value={selector}
           onChange={handleSelectorChange}
         />
         <button className="button-60" onClick={() => handlePickElement(action)}>
@@ -220,6 +223,8 @@ type TTypeParams = {
 };
 
 function Type({ action, dispatch }: TTypeParams) {
+  const [text, setText] = React.useState(action.props.Text);
+
   const dbounceRef = React.useRef<TDispatchRef<TTypeProps>>(
     debounce((props: TTypeProps, dispatch: any, actionId: string) => {
       dispatch({
@@ -234,14 +239,18 @@ function Type({ action, dispatch }: TTypeParams) {
 
   const handleTypePropChange = React.useCallback(
     (e: any) => {
-      if (e.target.getAttribute("data-proptype") === "typing-text") {
+
+      setText(e.target.value);
+
+      const actionType = e.target.getAttribute("data-proptype");
+      if (actionType === "typing-text") {
         dbounceRef.current(
           { ...action.props, Text: e.target.value },
           dispatch,
           action.id
         );
       }
-      if (e.target.getAttribute("data-proptype") === "overwrite-text") {
+      if (actionType === "overwrite-text") {
         dbounceRef.current(
           { ...action.props, "Overwrite Existing Text": e.target.checked },
           dispatch,
@@ -258,7 +267,7 @@ function Type({ action, dispatch }: TTypeParams) {
       <input
         type="text"
         placeholder="Type Text"
-        value={action.props["Text"]}
+        value={text}
         data-proptype="typing-text"
         onChange={handleTypePropChange}
       />
@@ -544,6 +553,8 @@ type TTextProps = TTextAction["props"];
 type TTextParams = { action: TTextAction; dispatch: any };
 
 function Text({ action, dispatch }: TTextParams) {
+  const [variable, setVariable] = React.useState(action.props.variable);
+
   const TextDispatchRef = React.useRef<TDispatchRef<TTextAction>>(
     debounce((props: TTextProps, dispatch: any, actionId: string) => {
       dispatch({
@@ -558,6 +569,7 @@ function Text({ action, dispatch }: TTextParams) {
 
   const handleTextChange = React.useCallback(
     (e: any) => {
+      setVariable(e.target.value);
       TextDispatchRef.current(
         { ...action.props, variable: e.target.value },
         dispatch,
@@ -568,23 +580,21 @@ function Text({ action, dispatch }: TTextParams) {
   );
 
   return (
-    <>
-      <div className="flex-column mt txt-clr fs-md">
-        <div className="fs-md">Variable</div>
-        <div className="flex-row mt txt-clr fs-md">
-          <div className="dollar-prefix">$</div>
-          <input
-            id="action-variable"
-            className="w-100"
-            value={action.props.variable}
-            onChange={handleTextChange}
-            type="text"
-            data-variable="true"
-            placeholder="variable name. Refer to this variable using '$ + variable_name'"
-          />
-        </div>
+    <div className="flex-column mt txt-clr fs-md">
+      <div className="fs-md">Variable</div>
+      <div className="flex-row mt txt-clr fs-md">
+        <div className="dollar-prefix">$</div>
+        <input
+          id="action-variable"
+          className="w-100"
+          value={variable}
+          onChange={handleTextChange}
+          type="text"
+          data-variable="true"
+          placeholder="variable name"
+        />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -593,6 +603,8 @@ type TAttributeProps = TAttributeAction["props"];
 type TAttributeParams = { action: TAttributeAction; dispatch: any };
 
 function Attribute({ action, dispatch }: TAttributeParams) {
+  const [variable, setVariable] = React.useState(action.props.variable);
+  const [attribute, setAttribute] = React.useState(action.props.attribute);
   const AttributeDispatchRef = React.useRef<TDispatchRef<TAttributeAction>>(
     debounce((props: TAttributeProps, dispatch: any, actionId: string) => {
       dispatch({
@@ -607,24 +619,25 @@ function Attribute({ action, dispatch }: TAttributeParams) {
 
   const handleAttributeChange = React.useCallback(
     (e: any) => {
-      const propType = e.target.getAttribute("data-proptype");
-      // if (propType !== "attribute" || propType !== "variable") return;
-
-      console.log(
-        "handleAttributeChange propType: ",
-        propType,
-        ", target-value:",
-        e.target.value
-      );
-
       AttributeDispatchRef.current(
-        { ...action.props, [propType]: e.target.value },
+        { ...action.props, attribute: e.target.value },
         dispatch,
         action.id
       );
+
+      setAttribute(e.target.value);
     },
     [action]
   );
+
+  const handleVariableChange = React.useCallback((e: any)=>{
+    AttributeDispatchRef.current(
+      { ...action.props, variable: e.target.value },
+      dispatch,
+      action.id
+    );    
+    setVariable(e.target.value);
+  },[action])
 
   return (
     <>
@@ -633,7 +646,7 @@ function Attribute({ action, dispatch }: TAttributeParams) {
         <input
           id="attribute"
           className="w-100"
-          value={action.props.attribute}
+          value={attribute}
           type="text"
           data-proptype="attribute"
           onChange={handleAttributeChange}
@@ -644,8 +657,8 @@ function Attribute({ action, dispatch }: TAttributeParams) {
           <div className="dollar-prefix">$</div>
           <input
             className="w-100"
-            value={action.props.variable}
-            onChange={handleAttributeChange}
+            value={variable}
+            onChange={handleVariableChange}
             type="text"
             data-proptype="variable"
             data-variable="true"
@@ -661,8 +674,8 @@ type TAnchorAction = TResolveAction<"Anchor">;
 type TAnchorProps = TAnchorAction["props"];
 type TAnchorParams = { action: TAnchorAction; dispatch: any };
 
-function Link({ action, dispatch }: TAnchorParams) {
-  const LinkDispatchRef = React.useRef<TDispatchRef<TAnchorAction>>(
+function Anchor({ action, dispatch }: TAnchorParams) {
+  const AnchorDispatchRef = React.useRef<TDispatchRef<TAnchorAction>>(
     debounce((props: TAnchorProps, dispatch: any, actionId: string) => {
       dispatch({
         type: "UPDATE_INTERACTION",
@@ -674,9 +687,9 @@ function Link({ action, dispatch }: TAnchorParams) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handleLinkChange = React.useCallback(
+  const handleAnchorChange = React.useCallback(
     (e: any) => {
-      LinkDispatchRef.current(
+      AnchorDispatchRef.current(
         { ...action.props, variable: e.target.value },
         dispatch,
         action.id
@@ -694,7 +707,7 @@ function Link({ action, dispatch }: TAnchorParams) {
           <input
             className="w-100"
             value={action.props.variable}
-            onChange={handleLinkChange}
+            onChange={handleAnchorChange}
             type="text"
             data-variable="true"
             placeholder="variable name. Refer to this variable using '$ + variable_name'"
@@ -803,7 +816,7 @@ export default function Interaction({
         <Attribute action={action as TAttributeAction} dispatch={dispatch} />
       )}
       {actionName === "Anchor" && (
-        <Link action={action as TAnchorAction} dispatch={dispatch} />
+        <Anchor action={action as TAnchorAction} dispatch={dispatch} />
       )}
       {actionName === "URL" && (
         <URL action={action as TURLAction} dispatch={dispatch} />

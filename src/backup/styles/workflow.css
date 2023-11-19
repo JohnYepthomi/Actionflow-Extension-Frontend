@@ -1,0 +1,138 @@
+:root {
+  --li-clr: white;
+  --li-bg-clr: #2a2929fa;
+
+  --li-hover-clr: black;
+  --li-hover-bg-clr: lightgray;
+
+  --li-child-text-clr: #b0b0b0;
+  --li-child-bg-clr: rgb(64, 63, 63);
+
+  --title-clr: #a7a7a7;
+
+  --body-bg-clr: #1e1e1e;
+
+  animation-timing-function: linear;
+}
+
+body {
+  font-family: ubuntu;
+  margin: 0;
+  background-color: var(--body-bg-clr);
+}
+
+.workflow-container {
+  /* position: relative; */
+  padding: 30px 30px;
+  color: white;
+}
+
+.workflow-label {
+  font-weight: bold;
+  font-size: 1.2rem;
+  text-align: center;
+  color: white;
+  margin-bottom: 20px;
+  margin-top: 20px;
+}
+
+.workflow-ul::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome 
+/*  width: 5;*/
+}
+.workflow-ul {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 400px;
+  height: calc(100vh - 60px);
+  align-self: center;
+}
+
+.workflow-ul li {
+  width: 400px;
+ background-color: #764d8b63;
+  background-color: rgba(150,150,150, 0.15);
+  color: white;
+  border-radius: 3px;
+  --li-left-border-clr: rgb(55, 54, 54);
+}
+
+/* .workflow-ul li[data-action-type="IF"],
+li[data-action-type="END"] {
+  background-color: rgb(203 35 35 / 66%);
+} */
+
+.action-header {
+  display: flex;
+  align-items: center;
+  /*  justify-content: center;*/
+  width: 100%;
+  height: 25px;
+  padding: 5px 5px 5px 5px;
+  text-align: end; /* was 'center' before */
+  color: inherit;
+  cursor: pointer;
+}
+
+.caption {
+  width: 80px;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.name {
+  width: 50px;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.action-details {
+  border: 3px solid #764d8b63;
+  border-top: none;
+  background-color: rgb(41 37 37);
+  border-radius: 0 0 3px 3px;
+}
+.action-details[data-show-details="true"] {
+  display: flex;
+}
+
+.action-details[data-show-details="false"] {
+  display: none;
+}
+
+button,
+input[type="submit"],
+input[type="reset"] {
+  background-color: #453f3f;
+  color: inherit;
+  border: none;
+  padding: 5px;
+  width: 50px;
+  font: inherit;
+  font-size: 0.71rem;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 3px;
+  outline: inherit;
+}
+
+input {
+  outline: none;
+  border: none;
+  border-radius: 3px;
+  padding: 3px;
+}
+
+.recorded-marker {
+  font-size: 0.45rem;
+  color: #fff;
+  background-color: red;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}

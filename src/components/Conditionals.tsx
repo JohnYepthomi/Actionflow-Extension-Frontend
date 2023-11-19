@@ -7,14 +7,16 @@ import {
   TOperatorCondition,
 } from "../Schemas/replaceTypes/Actions";
 import { TAction } from "../Types/ActionTypes/Action";
+import { useSelector } from '@xstate/react';
 
 type ConditionParams = {
   action: TConditionAction;
   current: any;
   dispatch: any;
+  service: any;
 };
 
-export default function Conditionals({ action, current, dispatch }: ConditionParams) {
+export default function Conditionals({ action, current, dispatch, service }: ConditionParams) {
   const handleOperatorClick = React.useCallback((operator: "AND" | "OR") => {
     const PAYLOAD: TAppEvents = {
       type: "ADD_OPERATOR",
@@ -28,7 +30,7 @@ export default function Conditionals({ action, current, dispatch }: ConditionPar
 
   return (
     <>
-      <ConditionItems action={action} current={current} dispatch={dispatch} />
+      <ConditionItems action={action} current={current} dispatch={dispatch} service={service} />
 
       {/* Description */}
       <div className="flex-row align-center justify-center flex-1 mt">
@@ -53,9 +55,10 @@ type ConitionItemsParams = {
   action: TConditionAction;
   current: any;
   dispatch: any;
+  service: any;
 };
 type TSelectableConditions = TGeneralCondition | TOperatorCondition;
-function ConditionItems({ action, current, dispatch }: ConitionItemsParams) {
+function ConditionItems({ action, current, dispatch, service }: ConitionItemsParams) {
   return (
     <>
       {action &&
@@ -70,6 +73,7 @@ function ConditionItems({ action, current, dispatch }: ConitionItemsParams) {
                 current={current}
                 actionId={action.id}
                 dispatch={dispatch}
+                service={service}
               />
             )}
           </div>
@@ -96,22 +100,26 @@ function OperatorItem({ selectedOperator }: TOperatorParams) {
   );
 }
 
+const getActions = (state: any) => state.context.flowActions;
+
 function Condition({
   condition,
   index,
   current,
   actionId,
   dispatch,
+  service
 }: {
   condition: TGeneralCondition;
   index: number;
   current: any;
   actionId: string;
   dispatch: any;
+  service: any;
 }) {
-
-  const [variables, setVariables] = useState<string[]|undefined>(["test", "my-texts"]);
-
+  // const flowActions = useSelector(service, getActions);
+  const [flowActions, setFlowActions] = useState(current.context.flowActions);
+  const [variables, setVariables] = useState<string[]>([]);
   const ConditionsOptionsTemplate: {
     type: "Basic" | "Element" | "Text" | "Number";
     options: string[];
@@ -176,7 +184,6 @@ function Condition({
 
     dispatch(PAYLOAD);
   }, []);
-
   const handleConditionValueChange = React.useCallback((event: any) => {
     const PAYLOAD: TAppEvents = {
       type: "UPDATE_CONDITION",
@@ -188,7 +195,6 @@ function Condition({
     };
     dispatch(PAYLOAD);
   }, []);
-
   const handleVariableChange = React.useCallback((event: any) => {
     const PAYLOAD: TAppEvents = {
       type: "UPDATE_CONDITION",
@@ -201,23 +207,42 @@ function Condition({
       },
     };
     dispatch(PAYLOAD);
-  }, [variables])
+  }, [])
 
   useEffect(()=>{
-    if(Array.isArray(current.flowActions)){
-      let variables = current.flowActions.filter((c: TAction) => "props" in c && c?.props?.variable).map((c: TAction) => "props" in c && c?.props?.variable);
-      if(variables)
-       setVariables(variables);
+    console.log("current: ", current);
+    if(Array.isArray(current.context.flowActions)){
+      let variables: any = [
+        ...current.context.flowActions
+          .filter((c: TAction) => "props" in c && c?.props?.variable)
+          .map((c: TAction) => {
+            if("props" in c && c?.props?.variable){
+              return '$' + c?.props?.variable // adding '$' for now, this should be added form the action component itself
+            }
+          }),
+        ...[].concat(
+          ...current.context.flowActions
+            .filter((c: TAction) => "props" in c && c?.props?.vars)
+            .map((c: TAction) => {
+              if("props" in c && c?.props?.vars){
+                return c?.props?.vars;
+              }
+            })
+        )
+      ];
+
+      if(variables){
+        console.log({variables});
+        setVariables(variables);
+      }
     }
-  },[current.flowActions])
+  },[current]);
 
   return (
     <div key={index} className="condition-container p-2">
-
       {
-        condition?.selectedType && !["Element", "Code"].includes(condition?.selectedType) && 
+        condition?.selectedType && ["Basic", "Text", "Number"].includes(condition?.selectedType) &&
         <select onChange={handleVariableChange} disabled={!variables}>
-          <optgroup label="Variables">
           {
             variables &&
             variables.map((varb, index) => {
@@ -229,22 +254,18 @@ function Condition({
                   // data-requires-check={JSON.stringify(
                   //   varb.requiresCheck
                   // )}
-                  selected={
-                    varb === condition?.selectedVariable ? true : false
-                  }
+                  selected={varb === condition?.selectedVariable ? true : false}
                 >
                   {varb}
                 </option>
             )})
           }
-          </optgroup>
         </select>
       }
 
-
       <div className="flex-row align-center mt">
         <div className="fs-sm">{condition.selectedType}</div>
-        
+
         <select onChange={handleConditionOptionChange}>
           {ConditionsOptionsTemplate &&
             ConditionsOptionsTemplate.map((cond_opts, index) => {
@@ -259,9 +280,7 @@ function Condition({
                         // data-requires-check={JSON.stringify(
                         //   cond_opts.requiresCheck
                         // )}
-                        selected={
-                          option === condition.selectedOption ? true : false
-                        }
+                        selected={option === condition.selectedOption ? true : false}
                       >
                         {option}
                       </option>

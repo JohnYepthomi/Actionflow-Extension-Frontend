@@ -1,60 +1,58 @@
-import { createMachine, assign, EventObject } from "xstate";
+import { createMachine, assign } from "xstate";
+import { ActionNodeProps } from "../ActionsDefinitions/definitions";
+import { TAppContext, TAppState } from "../Schemas/replaceTypes/StateType";
+import { TAppEvents } from "../Schemas/replaceTypes/StateEvents";
 import {
-  ActionNodeProps,
-  InteractionDefinitions,
-} from "../ActionsDefinitions/definitions.jsx";
-import { TAction, TRecordableActions } from "../Types/ActionTypes/Action";
+  SheetActionSchema,
+  SheetActionTypeSchema,
+} from "../Schemas/replaceTypes/Actions";
+import type {
+  TAction,
+  TComposeStorageKey,
+  TConditionAction,
+  TGeneralCondition,
+  TIntAction,
+  TResolveAction,
+  TTabsAction,
+} from "../Schemas/replaceTypes/Actions";
 import {
-  IntAction,
-  IntActionTypes,
-} from "../Types/ActionTypes/Interaction Actions";
+  AddOperatorEventSchema,
+  CreateInteractionActionEventSchema,
+  CreateRecordedActionEventSchema,
+  UpdateConditionActionEventSchema,
+  UpdateInteractionActionEventSchema,
+} from "../Schemas/SateEventsSchema";
 import {
-  ConditionalAction,
-  SelectableConditions,
-  GeneralCondition,
-  CondEventTypes,
-  CondEndEventTypes,
-  CondEndAction,
-} from "../Types/ActionTypes/Conditional Actions";
-import { TabAction, TabActionTypes } from "../Types/ActionTypes/Tab Actions";
-import { TComposeStorageKey } from "../Types/Storage Types";
+  BarrierActionSchema,
+  BarrierActionTypesSchema,
+  ConditionActionSchema,
+  IfWhileActionTypesSchema,
+} from "../Schemas/ConditionalsSchema";
 import {
-  TAppEvts,
-  TEvtsWithProps,
-  TIdleEvts,
-} from "../Types/State Types/StateEvents";
-import { TAppState, TAppContext } from "../Types/State Types/StateType";
-
-// import GlobeIcon from "../assets/globe";
-import { SheetAction } from "../Types/ActionTypes/Sheet Action";
+  IntActionSchema,
+  IntActionTypesSchema,
+} from "../Schemas/InteractionsSchema";
+import { TabActionTypesSchema, TabsActionSchema } from "../Schemas/TabsSchema";
+import { ActionCategorySchema } from "../Schemas/ActionsSchema";
 
 const commonEvents = {
-  INTERACTION: {
-    actions: ["newAction", "resolveNesting", "saveToStorage"],
+  CREATE_ACTION: {
+    actions: ["newAction", "resolveNesting"],
   },
-  CONDITIONALS: {
-    actions: ["newAction", "resolveNesting", "saveToStorage"],
-  },
-  TAB_ACTIONS: {
-    actions: ["newAction", "resolveNesting", "saveToStorage"],
-  },
-  ADD_CONDITION_OPERATOR: {
+  ADD_OPERATOR: {
     actions: ["newOperator"],
   },
   UPDATE_CONDITION: {
     actions: ["newCondition", "saveToStorage"],
   },
-  TAB_ACTIONS_UPDATE: {
+  UPDATE_TAB: {
     actions: ["updateTab", "saveToStorage"],
   },
   UPDATE_ACTIVE_TAB: {
     actions: ["activeTab"],
   },
   DRAG_EVENT: {
-    actions: ["resolveNesting", "saveToStorage"],
-  },
-  NEW_SHEET: {
-    actions: ["newAction", "resolveNesting"],
+    actions: ["resolveNesting"],
   },
 };
 
@@ -163,7 +161,7 @@ const DB_SUB_STATE = {
 
 export const AppStateMachine = createMachine<
   TAppContext,
-  TAppEvts,
+  TAppEvents,
   TAppState<TAppContext>
 >(
   {
@@ -177,7 +175,7 @@ export const AppStateMachine = createMachine<
     states: {
       restoring: {
         on: {
-          RESTORE_ACTIONS: {
+          READ_WORKFLOW: {
             target: "#DbState.getWorkflow",
           },
         },
@@ -188,23 +186,21 @@ export const AppStateMachine = createMachine<
           START_RECORD: {
             target: "#Actionflow.recording",
           },
-          CREATE_TABLE: {
+          CREATE_WORKFLOW: {
             target: "#DbState.createWorkflow",
           },
-          INSERT_TO_DB: {
+          READ_WORKFLOW: {
+            target: "#DbState.getWorkflow",
+          },
+          UPDATE_WORKFLOW: {
             target: "#DbState.saveWorkflow",
           },
-          CLEAR_WORKFLOW: {
+          DELETE_WORKFLOW: {
             target: "#DbState.clearWorkflow",
           },
           UPDATE_INTERACTION: {
             target: "#Actionflow.idle",
             actions: ["updateInteraction"],
-          },
-          UPDATE_ACTION_FROM_FRAME: {
-            actions: assign({
-              flowActions: (context, event: any) => event.actions,
-            }),
           },
         },
       },
@@ -213,15 +209,12 @@ export const AppStateMachine = createMachine<
         on: {
           ...commonEvents,
           RECORDED_ACTION: {
-            actions: ["recordedAction", "resolveNesting", "saveToStorage"],
+            actions: ["recordedAction", "resolveNesting"],
           },
           STOP_RECORD: {
             target: "#Actionflow.idle",
           },
           ERROR: "handleError",
-          UPDATE_RECORDED_ACTION: {
-            actions: ["recordedAction", "saveToStorage"],
-          },
           UPDATE_INTERACTION: {
             target: "#Actionflow.recording",
             actions: ["updateInteraction"],
@@ -257,7 +250,7 @@ export const AppStateMachine = createMachine<
       recordedAction: assign({ flowActions: actionFromRecording }),
       saveToStorage: saveToStorage,
       resolveNesting: assign({
-        flowActions: (c: TAppContext, e: TEvtsWithProps) => {
+        flowActions: (c: TAppContext, e) => {
           if (c?.flowActions?.length > 0) {
             const val = evauateNesting(c, e);
             return val;
@@ -272,42 +265,27 @@ export const AppStateMachine = createMachine<
 
 function updateInteractionAction(
   context: TAppContext,
-  event: TAppEvts
+  event: TAppEvents
 ): TAction[] {
   console.log("in updateInteractionAction state action handler");
 
-  if (event.type != "UPDATE_INTERACTION") return context.flowActions;
+  const parsedIntAction = UpdateInteractionActionEventSchema.safeParse(event);
+  if (!parsedIntAction.success) {
+    console.warn(parsedIntAction.error);
+    return context.flowActions;
+  }
 
-  // const interactionType = event.propType; // removed use of propType as we can get that info from previous state
+  const actionId = parsedIntAction.data.payload.actionId;
   const interactionType = context.flowActions.filter(
-    (a) => a.id === event.actionId
+    (a) => a.id === parsedIntAction.data.payload.actionId
   )[0].actionType;
 
-  const actionId = event.actionId;
   switch (interactionType) {
-    // case "Common":
-    //   console.log("in Common case");
-    //   const newSelector = event.props;
-    //   console.log({ newSelector });
-    //   const updatedCommonProps = context.flowActions.map((action) => {
-    //     if (action.id === actionId && "props" in action) {
-    //       return {
-    //         ...action,
-    //         props: {
-    //           ...action.props,
-    //           selector: newSelector.selector,
-    //         },
-    //       } as TAction;
-    //     } else return action;
-    //   });
-    //   console.log("updatedCommonProps: ", updatedCommonProps);
-    //   return updatedCommonProps;
-    //   break;
-
     case "URL":
       console.log("In URL Update Interaction Switch Case");
-      const newURLProps = event.props;
-      const updatedURLAction = context.flowActions.map((action) => {
+      const newURLProps = parsedIntAction.data.payload.props;
+
+      return context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "URL") {
           return {
             ...action,
@@ -318,27 +296,26 @@ function updateInteractionAction(
           };
         } else return action;
       });
-      return updatedURLAction;
     case "Anchor":
-      console.log("In Link Update Interaction Switch Case");
-      const newLinkProps = event.props;
-      const updatedLinkAction = context.flowActions.map((action) => {
+      console.log("In Anchor Update Interaction Switch Case");
+      const newAnchorProps = parsedIntAction.data.payload.props;
+      const updatedAnchorAction = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Anchor") {
           return {
             ...action,
             props: {
-              nodeName: newLinkProps?.nodeName ?? action.props.nodeName,
-              selector: newLinkProps?.selector ?? action.props.selector,
-              value: newLinkProps?.value ?? action.props.value,
-              variable: newLinkProps?.variable ?? action.props.variable,
+              nodeName: newAnchorProps?.nodeName ?? action.props.nodeName,
+              selector: newAnchorProps?.selector ?? action.props.selector,
+              value: newAnchorProps?.value ?? action.props.value,
+              variable: newAnchorProps?.variable ?? action.props.variable,
             },
           };
         } else return action;
       });
-      return updatedLinkAction;
+      return updatedAnchorAction;
     case "Attribute":
       console.log("In Attribute Update Interaction Switch Case");
-      const newAttributeProps = event.props;
+      const newAttributeProps = parsedIntAction.data.payload.props;
       const updatedAttributeAction = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Attribute") {
           return {
@@ -356,7 +333,7 @@ function updateInteractionAction(
       return updatedAttributeAction;
     case "Text":
       console.log("In Text Update Interaction Switch Case");
-      const newTextProps = event.props;
+      const newTextProps = parsedIntAction.data.payload.props;
       const updatedTextAction = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Text") {
           return {
@@ -370,10 +347,11 @@ function updateInteractionAction(
           };
         } else return action;
       });
+      console.log(updatedTextAction);
       return updatedTextAction;
     case "List":
       console.log("In List Update Interaction Switch Case");
-      const newListProps = event.props;
+      const newListProps = parsedIntAction.data.payload.props;
       const updatedListAction = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "List") {
           return {
@@ -389,7 +367,7 @@ function updateInteractionAction(
       return updatedListAction;
     case "Click":
       console.log("in Click Update Interaction Switch Case");
-      const newClickProps = event.props;
+      const newClickProps = parsedIntAction.data.payload.props;
       const updatedClickProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Click") {
           return {
@@ -397,9 +375,9 @@ function updateInteractionAction(
             props: {
               nodeName: newClickProps?.nodeName ?? action.props.nodeName,
               selector: newClickProps?.selector ?? action.props.selector,
-              "Wait For New Page To load":
-                newClickProps["Wait For New Page To load"] ??
-                action.props["Wait For New Page To load"],
+              "Wait For New Page To Load":
+                newClickProps["Wait For New Page To Load"] ??
+                action.props["Wait For New Page To Load"],
               "Wait For File Download":
                 newClickProps["Wait For File Download"] ??
                 action.props["Wait For File Download"],
@@ -413,16 +391,17 @@ function updateInteractionAction(
       return updatedClickProps;
     case "Type":
       console.log("in Type Update Interaction Switch Case");
-      const newTypeProps = event.props;
+      const newTypeProps = parsedIntAction.data.payload.props;
       const updatedTypeProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Type") {
           return {
             ...action,
             props: {
               ...action.props,
-              Text: newTypeProps["Text"],
-              "Overwrite Existing Text":
-                newTypeProps["Overwrite Existing Text"],
+              nodeName: newTypeProps?.nodeName ?? action.props.nodeName,
+              selector: newTypeProps?.selector ?? action.props.selector,
+              Text: newTypeProps["Text"] ?? action.props.Text,
+              "Overwrite Existing Text": newTypeProps["Overwrite Existing Text"] ?? action.props["Overwrite Existing Text"],
             },
           };
         } else return action;
@@ -431,13 +410,14 @@ function updateInteractionAction(
       return updatedTypeProps;
     case "Hover":
       console.log("in Hover Update Interaction Switch Case");
-      const newHoverProps = event.props;
+      const newHoverProps = parsedIntAction.data.payload.props;
       const updatedHoverProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Hover") {
           return {
             ...action,
             props: {
-              ...action.props,
+              nodeName: newHoverProps?.nodeName ?? action.props.nodeName,
+              selector: newHoverProps?.selector ?? action.props.selector,
               Description: newHoverProps["Description"],
             },
           } as TAction;
@@ -447,7 +427,7 @@ function updateInteractionAction(
       return updatedHoverProps;
     case "Keypress":
       console.log("in Keypress Update Interaction Switch Case");
-      const newKeypressProps = event.props;
+      const newKeypressProps = parsedIntAction.data.payload.props;
       const updatedKeypressProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType == "Keypress") {
           return {
@@ -465,7 +445,7 @@ function updateInteractionAction(
       return updatedKeypressProps;
     case "Select":
       console.log("in Select Update Interaction Switch Case");
-      const newSelectProps = event.props;
+      const newSelectProps = parsedIntAction.data.payload.props;
       const updatedSelectProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Select") {
           return {
@@ -485,7 +465,8 @@ function updateInteractionAction(
       return updatedSelectProps;
     case "Code":
       console.log("in Code Update Interaction Switch Case");
-      const newCodeProps = event.props;
+      const newCodeProps = parsedIntAction.data.payload.props;
+
       const updatedCodeProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Code") {
           return {
@@ -508,80 +489,87 @@ function updateInteractionAction(
       break;
     case "Prompts":
       break;
-    default:
-      return context.flowActions;
   }
 
   return context.flowActions;
 }
 
-function updateTabAction(context: TAppContext, event: TAppEvts) {
-  if (event.type !== "TAB_ACTIONS_UPDATE") return context.flowActions;
+function updateTabAction(context: TAppContext, event: TAppEvents) {
+  if (event.type !== "UPDATE_TAB") return context.flowActions;
 
   return (context.flowActions as any).map((act: any) => {
-    if (act.id === event.updated_action.id) return event.updated_action;
+    if (act.id === event.payload.action.id) return event.payload.action;
     else return act;
   });
 }
 
-function actionFromRecording(context: TAppContext, event: TAppEvts) {
+function actionFromRecording(context: TAppContext, event: TAppEvents) {
   console.log("actionFromRecording, event: ", event);
 
-  if (event.type !== "RECORDED_ACTION") return [];
+  const parsedEvent = CreateRecordedActionEventSchema.safeParse(event);
+  if (!parsedEvent.success) {
+    console.warn(parsedEvent.error);
+    return context.flowActions;
+  }
 
-  const actionType = event.actionType;
-  let currentAction = null;
+  const actionType = parsedEvent.data.payload.actionType;
+  const parsedIntTypes = IntActionTypesSchema.safeParse(actionType);
 
-  if (
-    ["Click", "Type", "Keypress", "Select", "Hover", "Prompts"].includes(
-      actionType
-    )
-  )
-    currentAction = "INT_ACTION";
-  if (
-    [
-      "SelectTab",
-      "SelectWindow",
-      "Navigate",
-      "NewTab",
-      "NewWindow",
-      "CloseTab",
-      "CloseWindow",
-      "Back",
-      "Forward",
-    ].includes(actionType)
-  )
-    currentAction = "TAB_ACTION";
+  if (parsedIntTypes.success) {
+    const newRecordedIntAction = {
+      id: guidGenerator(),
+      recorded: true,
+      nestingLevel: 0,
+      actionType: parsedIntTypes.data,
+      props: parsedEvent.data.payload.props,
+    };
 
-  switch (currentAction) {
-    case "INT_ACTION":
-      const int_action: any = event.payload;
+    const parsedIntAction = IntActionSchema.safeParse(newRecordedIntAction);
 
-      const prevlastAction = context.flowActions[
-        context.flowActions.length - 1
-      ] as IntAction;
+    if (parsedIntAction.success) {
+      const prevlastAction =
+        context.flowActions[context.flowActions.length - 1];
 
       if (
         prevlastAction &&
         ["Type", "Select"].includes(prevlastAction?.actionType) &&
+        "props" in prevlastAction &&
         "selector" in prevlastAction.props &&
-        prevlastAction.props.selector === int_action.props.selector
-      )
-        return context.flowActions.map((a) => {
+        prevlastAction.props.selector === newRecordedIntAction.props.selector
+      ) {
+        context.flowActions = context.flowActions.map((a) => {
           if (a.id === prevlastAction.id)
-            return { ...a, props: int_action.props };
+            return { ...a, props: newRecordedIntAction.props };
           else return a;
         });
 
-      int_action["recorded"] = true;
-      int_action["id"] = guidGenerator();
-      int_action["nestingLevel"] = 0;
-      return [...context.flowActions, int_action as IntAction];
+        return context.flowActions;
+      }
 
-    case "TAB_ACTION":
-      const { url, tabId, windowId } = event.payload.props;
+      context.flowActions.push(parsedIntAction.data);
+
+      return context.flowActions;
+    } else if (parsedIntAction.error) {
+      console.warn(parsedIntAction.error);
+    }
+  }
+
+  const parsedTabTypes = TabActionTypesSchema.safeParse(actionType);
+  if (parsedTabTypes.success) {
+    const newRecordedTabAction = {
+      id: guidGenerator(),
+      recorded: true,
+      nestingLevel: 0,
+      actionType: parsedTabTypes.data,
+      props: parsedEvent.data.payload.props,
+    } satisfies TTabsAction;
+
+    const parsedTab = TabsActionSchema.safeParse(newRecordedTabAction);
+
+    if (parsedTab.success) {
+      const { url, tabId, windowId } = parsedEvent.data.payload.props;
       const prevActions: TAction[] = context.flowActions;
-      const prevNewTabAction = prevActions[prevActions.length - 1] as TabAction;
+      const prevNewTabAction = prevActions[prevActions.length - 1];
       const isLastNewTabAction =
         prevActions.length > 0 &&
         prevNewTabAction.actionType === "NewTab" &&
@@ -607,22 +595,15 @@ function actionFromRecording(context: TAppContext, event: TAppEvts) {
         return context.flowActions;
       }
 
-      const tab_action = {
-        id: guidGenerator(),
-        actionType: event.actionType as TabActionTypes,
-        nestingLevel: 0,
-        recorded: true,
-        props: {
-          url,
-          tabId,
-          windowId,
-        },
-      };
-      return [...context.flowActions, tab_action satisfies TabAction];
+      context.flowActions.push(parsedTab.data);
 
-    default:
       return context.flowActions;
+    } else if (parsedTab.error) {
+      console.warn(parsedTab.error);
+    }
   }
+
+  return context.flowActions;
 }
 
 function saveToStorage(context: TAppContext) {
@@ -654,146 +635,202 @@ function guidGenerator() {
   );
 }
 
-function updateActiveTab(_context: TAppContext, event: TAppEvts) {
+function updateActiveTab(_context: TAppContext, event: TAppEvents) {
   console.log("updateActiveTab");
   if (event.type !== "UPDATE_ACTIVE_TAB") return undefined;
 
-  return event.newTabInfo;
+  return event.payload.newTabInfo;
 }
 
-function createAction(context: TAppContext, event: TAppEvts) {
+function createAction(context: TAppContext, event: TAppEvents) {
   console.log("createAction");
-  const ACTION_EVENT_TYPE = event.type;
-  let tempState: TAction[] = [];
-  if (
-    event.type !== "INTERACTION" &&
-    event.type !== "CONDITIONALS" &&
-    event.type !== "TAB_ACTIONS"
-  )
-    return [];
 
-  const { name, svg } = event.item;
-
-  switch (ACTION_EVENT_TYPE) {
-    case "INTERACTION":
-      const props = {
-        ...ActionNodeProps["Common"],
-        ...(ActionNodeProps as any)[`${name}`],
-      };
-      const newInteractionAction = {
-        id: guidGenerator(),
-        actionType: (event as any).item.name,
-        recorded: false,
-        props,
-        nestingLevel: 0,
-      } satisfies IntAction;
-      (tempState as any).push(newInteractionAction);
-      break;
-
-    case "CONDITIONALS":
-      const ctype = event.item.name;
-
-      if (ctype === "IF" || ctype === "WHILE") {
-        const GeneralConditionDefaultTemplate: GeneralCondition = {
-          selectedType: "Element",
-          selectedOption: "IsVisible",
-          requiresCheck: true,
-          checkValue: "",
-        };
-        const newConditionAction = {
-          id: guidGenerator(),
-          actionType: ctype,
-          nestingLevel: 0,
-          conditions: [GeneralConditionDefaultTemplate],
-        } satisfies ConditionalAction;
-        tempState.push(newConditionAction);
-      } else if (ctype === "ELSE" || ctype === "END") {
-        const newConditionAction = {
-          id: guidGenerator(),
-          actionType: ctype,
-          nestingLevel: 0,
-        } satisfies CondEndAction;
-        tempState.push(newConditionAction);
-      }
-      break;
-
-    case "NEW_SHEET":
-      const newSheet: SheetAction = {
-        id: guidGenerator(),
-        actionType: "Sheet" satisfies SheetAction["actionType"],
-        props: {},
-        nestingLevel: 0,
-      };
-      tempState.push(newSheet);
-      break;
-
-    case "TAB_ACTIONS":
-      const newTabAction = {
-        id: guidGenerator(),
-        actionType: (event as any).item.name,
-        nestingLevel: 0,
-        recorded: false,
-        props: ActionNodeProps.Tab,
-      } satisfies TabAction;
-      tempState.push(newTabAction);
-      break;
-
-    default:
-      break;
+  const parsedEvent = CreateInteractionActionEventSchema.safeParse(event);
+  if (!parsedEvent.success) {
+    console.warn(parsedEvent.error);
+    return context.flowActions;
   }
 
-  return [...context.flowActions, ...tempState];
+  const actionType = parsedEvent.data.payload.actionType;
+  const ActionCategory = ActionCategorySchema.safeParse(actionType);
+  if (ActionCategory.success) {
+    switch (ActionCategory.data) {
+      case "INTERACTION":
+        const parsedIntActionType = IntActionTypesSchema.parse(actionType);
+        let newInteractionAction: TIntAction;
+
+        newInteractionAction = {
+          id: guidGenerator(),
+          actionType: parsedIntActionType,
+          recorded: false,
+          props: {
+            ...ActionNodeProps["Common"],
+            ...ActionNodeProps[`${parsedIntActionType}`],
+          },
+          nestingLevel: 0,
+        } as TIntAction;
+
+        const parsedIntAction = IntActionSchema.safeParse(newInteractionAction);
+        if (parsedIntAction.success) {
+          if (newInteractionAction)
+            context.flowActions.push(newInteractionAction);
+          return context.flowActions;
+        } else console.warn(parsedIntAction.error);
+        break;
+
+      case "IF-WHILE":
+        const parsedIfWhileActionType =
+          IfWhileActionTypesSchema.parse(actionType);
+        if (parsedIfWhileActionType) {
+          const GeneralConditionDefaultTemplate: TGeneralCondition = {
+            selectedVariable: "",
+            selectedType: "Element",
+            selectedOption: "IsVisible",
+            requiresCheck: true,
+            checkValue: "",
+          };
+          const newConditionAction: TConditionAction = {
+            id: guidGenerator(),
+            actionType: parsedIfWhileActionType,
+            nestingLevel: 0,
+            conditions: [GeneralConditionDefaultTemplate],
+          };
+
+          const parsedIFWHILE =
+            ConditionActionSchema.safeParse(newConditionAction);
+          if (parsedIFWHILE.success) {
+            context.flowActions.push(newConditionAction);
+            return context.flowActions;
+          } else console.warn(parsedIFWHILE.error);
+        }
+        break;
+
+      case "BARRIER":
+        const parsedBarrierActionType =
+          BarrierActionTypesSchema.safeParse(actionType);
+        if (parsedBarrierActionType.success) {
+          const newBarrierAction = {
+            id: guidGenerator(),
+            actionType: parsedBarrierActionType.data,
+            nestingLevel: 0,
+          };
+          const parsedBarrier = BarrierActionSchema.safeParse(newBarrierAction);
+          if (parsedBarrier.success) {
+            context.flowActions.push(newBarrierAction);
+            return context.flowActions;
+          } else console.warn(parsedBarrier.error);
+        } else if (parsedBarrierActionType.error) {
+          console.warn(parsedBarrierActionType.error);
+        }
+        break;
+
+      case "TABS":
+        const parsedTabActionType = TabActionTypesSchema.parse(actionType);
+        const newTabAction = {
+          id: guidGenerator(),
+          actionType: parsedTabActionType,
+          nestingLevel: 0,
+          recorded: false,
+          props: ActionNodeProps.Tab,
+        } satisfies TTabsAction;
+
+        const parsedTab = TabsActionSchema.safeParse(newTabAction);
+        if (parsedTab.success) {
+          context.flowActions.push(newTabAction);
+          return context.flowActions;
+        } else console.warn(parsedTab.error);
+        break;
+
+      case "SHEET": {
+        const parsedSheetActionType = SheetActionTypeSchema.parse(actionType);
+        const newSheet = {
+          id: guidGenerator(),
+          actionType: parsedSheetActionType,
+          props: {},
+          nestingLevel: 0,
+        };
+
+        const parsedSheet = SheetActionSchema.safeParse(newSheet);
+        if (parsedSheet.success) {
+          context.flowActions.push(newSheet);
+          return context.flowActions;
+        } else console.warn(parsedSheet.error);
+      }
+      default:
+        console.error(`${ActionCategory.data} CATEGORY NOT SUPPORTED`);
+    }
+  } else {
+    console.error(ActionCategory.error);
+  }
+
+  return context.flowActions;
 }
 
-function addConditionOperator(context: TAppContext, event: TAppEvts) {
+function addConditionOperator(context: TAppContext, event: TAppEvents) {
   console.log("addConditionOperator");
-  if (event.type !== "ADD_CONDITION_OPERATOR") return [];
 
-  const actionId = event.actionId;
-  const selectedOperator = event.selection;
-  const GeneralConditionDefaultTemplate: GeneralCondition = {
+  const parsedEvent = AddOperatorEventSchema.safeParse(event);
+
+  if (!parsedEvent.success) {
+    console.warn(parsedEvent.error);
+    return context.flowActions;
+  }
+
+  const actionId = parsedEvent.data.payload.actionId;
+  const selectedOperator = parsedEvent.data.payload.selection;
+  const GeneralConditionDefaultTemplate = {
     selectedType: "Element",
     selectedOption: "IsVisible",
     requiresCheck: true,
     checkValue: "",
-  };
+  } satisfies TGeneralCondition;
 
-  // need to improve code below
-  const prevConditions = (context.flowActions as any).filter(
-    (action: any) => action.id === actionId && "conditions" in action
-  )[0]["conditions"];
-  const updatedConditions = [
-    ...prevConditions,
-    { type: "Operator", selected: selectedOperator },
-    GeneralConditionDefaultTemplate,
-  ];
-
-  return [
-    ...context.flowActions.map((action) => {
-      if (action.id === event.actionId) {
-        return { ...action, conditions: updatedConditions };
-      }
-      return action;
-    }),
-  ];
+  return context.flowActions.map((action) => {
+    if (action.id === actionId && "conditions" in action) {
+      return {
+        ...action,
+        conditions: [
+          ...action.conditions,
+          {
+            type: "Operator",
+            selected: selectedOperator,
+          } satisfies TResolveAction<"Operator">,
+          GeneralConditionDefaultTemplate,
+        ],
+      };
+    } else return action;
+  });
 }
 
-function updateCondition(context: TAppContext, event: TAppEvts) {
+function updateCondition(context: TAppContext, event: TAppEvents) {
   console.log("updateCondition");
-  if (event.type != "UPDATE_CONDITION") return;
-  const payload = event.payload;
+  if (event.type != "UPDATE_CONDITION") return context.flowActions;
 
-  const { index, actionId } = payload;
+  const parsedEvent = UpdateConditionActionEventSchema.safeParse(event);
+  if (!parsedEvent.success) {
+    console.warn(parsedEvent.error);
+    return context.flowActions;
+  }
 
-  return (context.flowActions as any).map((action: any) => {
-    if (action.id === actionId) {
-      const updatedCond = action["conditions"].map((cond: any, idx: number) => {
-        // prev type used for cond: SelectableConditions
-        if (idx === index) {
+  const payload = parsedEvent.data.payload;
+  const { index: actionIndex, actionId } = payload;
+
+  const updatedCondition = context.flowActions.map((action) => {
+    if (action.id === actionId && "conditions" in action) {
+      const updatedCond = action["conditions"].map((cond, idx: number) => {
+        if (idx === actionIndex) {
           if ("selection" in payload) {
-            cond["selectedType"] = payload.selection.conditionType;
-            cond["selectedOption"] = payload.selection.selectedOption;
-          } else if ("checkValue" in payload) {
+
+            if ("selectedType" in cond && "selectedOption" in payload.selection && "selectedType" in payload.selection) {
+              cond["selectedOption"] = payload.selection.selectedOption ? payload.selection?.selectedOption : cond["selectedOption"];
+              cond["selectedType"] = payload.selection.selectedType ? payload.selection?.selectedType : cond["selectedType"];
+            }
+
+            else if ("selectedVariable" in cond && "selectedVariable" in payload.selection) {
+              cond["selectedVariable"] = payload.selection?.selectedVariable ? payload.selection?.selectedVariable : cond["selectedVariable"];
+            }
+
+          } else if ("checkValue" in payload && "checkValue" in cond) {
             cond["checkValue"] = payload.checkValue;
           }
         }
@@ -804,6 +841,8 @@ function updateCondition(context: TAppContext, event: TAppEvts) {
 
     return action;
   });
+
+  return updatedCondition;
 }
 
 function handleErrors(error: any) {
@@ -817,17 +856,18 @@ function restoreFlowActions(context: TAppContext, event: any) {
   return prevActions ? JSON.parse(prevActions) : [];
 }
 
-function evauateNesting(context: TAppContext, event: TEvtsWithProps) {
+function evauateNesting(context: TAppContext, event: TAppEvents) {
   console.log("evauateNesting() called. event: ", event);
 
   const t0 = performance.now();
 
   let changedActions =
-    event.type === "DRAG_EVENT" ? event.payload.dragInfo : context.flowActions;
+    event.type === "DRAG_EVENT" ? event.payload : context.flowActions;
   let nestingLevel = 0;
-  let prevAction: any = null;
+  let prevAction: TAction | null = null;
   let PrevIfCount = 0;
   let marginLeft = 0;
+
   const newActions = changedActions.map((action) => {
     if (
       prevAction?.actionType === "IF" ||

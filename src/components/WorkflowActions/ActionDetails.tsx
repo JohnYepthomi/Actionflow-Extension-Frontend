@@ -31,11 +31,13 @@ function ActionDetails({
   localActions,
   dispatch,
   current,
+  service
 }: {
   action: any;
   localActions: TAction[];
   dispatch: any;
   current: any;
+  service: any;
 }) {
   console.log("====rendered==== ACTION DETAILS COMPONENT   actionType: ", action.actionType);
 
@@ -44,14 +46,14 @@ function ActionDetails({
           <div className="action-details flex-column p-2" data-show-details="false">
               {INT_ACTIONS.includes(action.actionType) && (<Interaction action={action} actions={localActions} current={current} dispatch={dispatch}/>)}
 
-              {COND_ACTIONS.includes(action.actionType) && (<Conditionals action={action} current={current} dispatch={dispatch}/>)}
+              {COND_ACTIONS.includes(action.actionType) && (<Conditionals action={action} current={current} dispatch={dispatch} service={service}/>)}
 
               {TAB_ACTIONS.includes(action.actionType) && (<TabActions action={action} dispatch={dispatch}/>)}
 
               {action.actionType === "Sheet" && <Sheet />}
           </div>
       );
-  },[action])
+  },[current, action])
 
   // Actions that have Details to display
   if ("props" in action || "conditions" in action || "tabId" in action){

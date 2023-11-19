@@ -29,9 +29,11 @@ let itemColor = "";
 const ChromeActions = ({
   current,
   dispatch,
+  service,
 }: {
   dispatch: any;
   current: any;
+  service: any;
 }) => {
   const [localActions, setLocalActions] = useState<TAction[]>(
     current.context.flowActions
@@ -42,15 +44,16 @@ const ChromeActions = ({
   const draggedPos = useRef<number>();
   const controls = useAnimationControls();
   const tempMarginLeft = useRef<string>();
+  const [isDnD, setIsDnD] = useState<boolean>(false);
 
   // CHROME DRAG EVENTS HANDLERS
   const handleDragStart = (e: any, index: number) => {
     console.log("handleDragStart");
-    // e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.effectAllowed = "move";
     const clonedNode = e.target.cloneNode(true);
     e.dataTransfer.setDragImage(clonedNode, 0, 0);
-    clonedNode.style.opacity = "0.5";
-    e.dataTransfer.setData("text/plain", "some_dummy_data"); // firefox
+    // clonedNode.style.opacity = "0.5";
+    // e.dataTransfer.setData("text/plain", "some_dummy_data"); // firefox
     itemColor = e.target.style.backgroundColor;
     tempMarginLeft.current = e.target.style.marginLeft;
     e.target.style.marginLeft = "";
@@ -61,7 +64,7 @@ const ChromeActions = ({
     if (enterPos.current) return;
     else enterPos.current = index;
 
-    if (draggedPos.current && draggedPos.current !== index) {
+    if (draggedPos?.current !== index) {
       const t0 = performance.now();
 
       let newItems = [...localActions];
@@ -121,6 +124,7 @@ const ChromeActions = ({
         return (
           <motion.li
             key={action.id}
+            type="react-dnd"
             draggable
             onDragStart={(e) => handleDragStart(e, index)}
             onDragEnter={(e) => handleDragEnter(e, index)}
@@ -146,6 +150,7 @@ const ChromeActions = ({
               localActions={localActions}
               dispatch={dispatch}
               current={current}
+              service={service}
             />
           </motion.li>
         );

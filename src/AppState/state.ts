@@ -52,7 +52,7 @@ const commonEvents = {
     actions: ["activeTab"],
   },
   DRAG_EVENT: {
-    actions: ["resolveNesting"],
+    actions: ["resolveNesting"], // "toggleOnDrop",
   },
 };
 
@@ -159,6 +159,18 @@ const DB_SUB_STATE = {
   },
 };
 
+// TAURI ACTION TICKER EVENT STATE
+const TAURI_ACTION_TICKER_EVENTS = {
+  UPDATE_CURRENT_ACTION_TICKER_ID: {
+    target: "#Actionflow.idle",
+    actions: ["taskActionUpdate"],
+  },
+  RESET_ACTION_TICKER_ID: {
+    target: "#Actionflow.idle",
+    actions: assign({ currentActionTickerId: null }),
+  },
+}
+
 export const AppStateMachine = createMachine<
   TAppContext,
   TAppEvents,
@@ -171,40 +183,47 @@ export const AppStateMachine = createMachine<
     context: {
       flowActions: [],
       activeTab: undefined,
+      currentActionTickerId: undefined,
+      itemDroppedToggle: false,
     },
     states: {
-      restoring: {
-        on: {
-          READ_WORKFLOW: {
-            target: "#DbState.getWorkflow",
-          },
-        },
-      },
+      // restoring: {
+      //   on: {
+      //     READ_WORKFLOW: {
+      //       target: "#DbState.getWorkflow",
+      //     },
+      //   },
+      // },
       idle: {
         on: {
           ...commonEvents,
           START_RECORD: {
             target: "#Actionflow.recording",
           },
-          CREATE_WORKFLOW: {
-            target: "#DbState.createWorkflow",
-          },
-          READ_WORKFLOW: {
-            target: "#DbState.getWorkflow",
-          },
-          UPDATE_WORKFLOW: {
-            target: "#DbState.saveWorkflow",
-          },
-          DELETE_WORKFLOW: {
-            target: "#DbState.clearWorkflow",
-          },
+          // CREATE_WORKFLOW: {
+          //   target: "#DbState.createWorkflow",
+          // },
+          // READ_WORKFLOW: {
+          //   target: "#DbState.getWorkflow",
+          // },
+          // UPDATE_WORKFLOW: {
+          //   target: "#DbState.saveWorkflow",
+          // },
+          // DELETE_WORKFLOW: {
+          //   target: "#DbState.clearWorkflow",
+          // },
           UPDATE_INTERACTION: {
             target: "#Actionflow.idle",
             actions: ["updateInteraction"],
           },
+          ...TAURI_ACTION_TICKER_EVENTS, //       <-- STATE UPDATE SENT FROM TAURI RUN
+          UPDATE_WORKFLOW_FROM_TAURI: {
+            target: "#Actionflow.idle",
+            actions: ["updateTauriWorkflow"],
+          },
         },
       },
-      dbOperations: { ...DB_SUB_STATE },
+      // dbOperations: { ...DB_SUB_STATE },
       recording: {
         on: {
           ...commonEvents,
@@ -251,14 +270,33 @@ export const AppStateMachine = createMachine<
       saveToStorage: saveToStorage,
       resolveNesting: assign({
         flowActions: (c: TAppContext, e) => {
-          if (c?.flowActions?.length > 0) {
-            const val = evauateNesting(c, e);
-            return val;
-          } else return c.flowActions;
+          console.log("resolveNesting called with event: ", e);
+          if(e.type === "CREATE_ACTION"){
+            if (c?.flowActions?.length > 0) {
+              const updated_actions_nesting = evauateNesting(c.flowActions);
+              return updated_actions_nesting;
+            }
+          }else if (e.type === "DRAG_EVENT"){
+            if(e?.payload){
+              const updated_actions_nesting = evauateNesting(e.payload);
+              return updated_actions_nesting;
+            }
+          }
+
+          return c.flowActions;
         },
       }),
       updateTab: assign({ flowActions: updateTabAction }),
       updateInteraction: assign({ flowActions: updateInteractionAction }),
+      taskActionUpdate: assign({
+        currentActionTickerId: (c: TAppContext, e: TAppEvents) => e.id,
+      }),
+      updateTauriWorkflow: assign({
+        flowActions: (c: TAppContext, e: TAppEvents) => e.workflow,
+      }),
+      toggleOnDrop: assign({
+        itemDroppedToggle: (c: any, e: any) => !c.itemDroppedToggle,
+      }),
     },
   }
 );
@@ -297,22 +335,22 @@ function updateInteractionAction(
         } else return action;
       });
     case "Anchor":
-      console.log("In Link Update Interaction Switch Case");
-      const newLinkProps = parsedIntAction.data.payload.props;
-      const updatedLinkAction = context.flowActions.map((action) => {
+      console.log("In Anchor Update Interaction Switch Case");
+      const newAnchorProps = parsedIntAction.data.payload.props;
+      const updatedAnchorAction = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Anchor") {
           return {
             ...action,
             props: {
-              nodeName: newLinkProps?.nodeName ?? action.props.nodeName,
-              selector: newLinkProps?.selector ?? action.props.selector,
-              value: newLinkProps?.value ?? action.props.value,
-              variable: newLinkProps?.variable ?? action.props.variable,
+              nodeName: newAnchorProps?.nodeName ?? action.props.nodeName,
+              selector: newAnchorProps?.selector ?? action.props.selector,
+              value: newAnchorProps?.value ?? action.props.value,
+              variable: newAnchorProps?.variable ?? action.props.variable,
             },
           };
         } else return action;
       });
-      return updatedLinkAction;
+      return updatedAnchorAction;
     case "Attribute":
       console.log("In Attribute Update Interaction Switch Case");
       const newAttributeProps = parsedIntAction.data.payload.props;
@@ -398,9 +436,12 @@ function updateInteractionAction(
             ...action,
             props: {
               ...action.props,
-              Text: newTypeProps["Text"],
+              nodeName: newTypeProps?.nodeName ?? action.props.nodeName,
+              selector: newTypeProps?.selector ?? action.props.selector,
+              Text: newTypeProps["Text"] ?? action.props.Text,
               "Overwrite Existing Text":
-                newTypeProps["Overwrite Existing Text"],
+                newTypeProps["Overwrite Existing Text"] ??
+                action.props["Overwrite Existing Text"],
             },
           };
         } else return action;
@@ -465,7 +506,7 @@ function updateInteractionAction(
     case "Code":
       console.log("in Code Update Interaction Switch Case");
       const newCodeProps = parsedIntAction.data.payload.props;
-      
+
       const updatedCodeProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Code") {
           return {
@@ -682,6 +723,7 @@ function createAction(context: TAppContext, event: TAppEvents) {
           IfWhileActionTypesSchema.parse(actionType);
         if (parsedIfWhileActionType) {
           const GeneralConditionDefaultTemplate: TGeneralCondition = {
+            selectedVariable: "",
             selectedType: "Element",
             selectedOption: "IsVisible",
             requiresCheck: true,
@@ -777,6 +819,7 @@ function addConditionOperator(context: TAppContext, event: TAppEvents) {
   const actionId = parsedEvent.data.payload.actionId;
   const selectedOperator = parsedEvent.data.payload.selection;
   const GeneralConditionDefaultTemplate = {
+    selectedVariable: "",
     selectedType: "Element",
     selectedOption: "IsVisible",
     requiresCheck: true,
@@ -813,21 +856,30 @@ function updateCondition(context: TAppContext, event: TAppEvents) {
   const payload = parsedEvent.data.payload;
   const { index: actionIndex, actionId } = payload;
 
-  return context.flowActions.map((action) => {
+  const updatedCondition = context.flowActions.map((action) => {
     if (action.id === actionId && "conditions" in action) {
       const updatedCond = action["conditions"].map((cond, idx: number) => {
         if (idx === actionIndex) {
           if ("selection" in payload) {
-
-            if ("selectedType" in cond && "selectedOption" in payload.selection && "selectedType" in payload.selection) {
-              cond["selectedOption"] = payload.selection.selectedOption ? payload.selection?.selectedOption : cond["selectedOption"];
-              cond["selectedType"] = payload.selection.selectedType ? payload.selection?.selectedType : cond["selectedType"];
+            if (
+              "selectedType" in cond &&
+              "selectedOption" in payload.selection &&
+              "selectedType" in payload.selection
+            ) {
+              cond["selectedOption"] = payload.selection.selectedOption
+                ? payload.selection?.selectedOption
+                : cond["selectedOption"];
+              cond["selectedType"] = payload.selection.selectedType
+                ? payload.selection?.selectedType
+                : cond["selectedType"];
+            } else if (
+              "selectedVariable" in cond &&
+              "selectedVariable" in payload.selection
+            ) {
+              cond["selectedVariable"] = payload.selection?.selectedVariable
+                ? payload.selection?.selectedVariable
+                : "";
             }
-
-            else if ("selectedVariable" in cond && "selectedVariable" in payload.selection) {
-              cond["selectedVariable"] = payload.selection?.selectedVariable ? payload.selection?.selectedVariable : cond["selectedVariable"];
-            }
-
           } else if ("checkValue" in payload && "checkValue" in cond) {
             cond["checkValue"] = payload.checkValue;
           }
@@ -839,6 +891,8 @@ function updateCondition(context: TAppContext, event: TAppEvents) {
 
     return action;
   });
+
+  return updatedCondition;
 }
 
 function handleErrors(error: any) {
@@ -852,19 +906,17 @@ function restoreFlowActions(context: TAppContext, event: any) {
   return prevActions ? JSON.parse(prevActions) : [];
 }
 
-function evauateNesting(context: TAppContext, event: TAppEvents) {
+function evauateNesting(actions: TAction[]) {
   console.log("evauateNesting() called. event: ", event);
 
   const t0 = performance.now();
 
-  let changedActions =
-    event.type === "DRAG_EVENT" ? event.payload : context.flowActions;
   let nestingLevel = 0;
   let prevAction: TAction | null = null;
   let PrevIfCount = 0;
   let marginLeft = 0;
 
-  const newActions = changedActions.map((action) => {
+  const newActions = actions?.map((action) => {
     if (
       prevAction?.actionType === "IF" ||
       prevAction?.actionType === "List" ||

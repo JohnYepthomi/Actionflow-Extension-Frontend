@@ -22,8 +22,8 @@ body {
 }
 
 .workflow-container {
-  position: relative;
-  padding: 0px 30px;
+  /* position: relative; */
+  padding: 30px 30px;
   color: white;
 }
 
@@ -36,6 +36,10 @@ body {
   margin-top: 20px;
 }
 
+.workflow-ul::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome 
+/*  width: 5;*/
+}
 .workflow-ul {
   position: relative;
   display: flex;
@@ -43,13 +47,14 @@ body {
   align-items: center;
   gap: 10px;
   width: 400px;
-  height: calc(100vh - 70px);
+  height: calc(100vh - 60px);
   align-self: center;
 }
 
 .workflow-ul li {
-  width: 100%;
-  background-color: #764d8b63;
+  width: 400px;
+ background-color: #764d8b63;
+  background-color: rgba(150,150,150, 0.15);
   color: white;
   border-radius: 3px;
   --li-left-border-clr: rgb(55, 54, 54);
@@ -63,9 +68,9 @@ li[data-action-type="END"] {
 .action-header {
   display: flex;
   align-items: center;
-  /*	justify-content: center;*/
+  /*  justify-content: center;*/
   width: 100%;
-  height: 25px;
+  height: 35px;
   padding: 5px 5px 5px 5px;
   text-align: end; /* was 'center' before */
   color: inherit;
@@ -78,8 +83,9 @@ li[data-action-type="END"] {
   pointer-events: none;
 }
 
+/* ACTION HEADER ACTIONTYPE NAME */
 .name {
-  width: 50px;
+  width: 100%; 
   font-size: 0.8rem;
   text-align: left;
 }

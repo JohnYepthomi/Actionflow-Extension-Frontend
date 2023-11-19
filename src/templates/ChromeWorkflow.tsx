@@ -80,11 +80,14 @@ const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
     }
   }
   async function handleComposeFinish() {
-    localStorage.setItem("composeData", JSON.stringify(current.context.flowActions));
+    localStorage.setItem(
+      "composeData",
+      JSON.stringify(current.context.flowActions)
+    );
     const composeData = localStorage.getItem("composeData");
     localStorage.setItem("isComposeCompleted", "true");
 
-    if (composeData){
+    if (composeData) {
       await messageTab({
         message: "compose-completed",
         payload: current.context.flowActions,
@@ -166,7 +169,7 @@ const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
       });
   }
 
-  return (  
+  return (
     <div
       id="ported-component"
       className="workflow-container flex-column align-center justify-content"
@@ -174,8 +177,8 @@ const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
       <ActionMenu dispatch={send} />
       <ActiveTab current={current} />
       <RecordingButton current={current} dispatch={send} />
-      <Actions dispatch={send} current={current} />
-      
+      <Actions dispatch={send} current={current} service={service} />
+
       <button
         style={{
           backgroundColor: "#472749",
@@ -190,5 +193,4 @@ const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
     </div>
   );
 };
-
 export default memo(ChromeWorkflow);
