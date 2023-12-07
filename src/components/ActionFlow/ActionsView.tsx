@@ -8,7 +8,8 @@ import ReactFlow, {
   addEdge,
   Panel,
   Handle,
-  Position
+  Position,
+  useViewport
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import ActionHeader from "../WorkflowActions/ActionHeader";
@@ -47,45 +48,43 @@ const initialEdges = [
 ];
 const proOptions = { hideAttribution: true };
 
-//Custom Node
-const CustomHandles = ({ index, actionType, handleId }) => {
-  const style = {borderColor: "green", backgroundColor: "green"};
-
-  //SPECIAL Actions
-  if(["IF", "List"].includes(actionType)){
-    return (
-      <>
-        { index > 0 && <Handle id={handleId} type="target" position={Position.Top} style={{...style}} />}
-        {<Handle type="source" position={Position.Right} id={handleId} style={{...style}} />}
-        {<Handle type="source" position={Position.Left} id={handleId} style={{...style}} />}
-      </>
-    );
-  }
-
-  //Normal Actions
-  return (
-    <>
-      { index > 0 && <Handle id={handleId} type="target" position={Position.Top} style={{...style}} />}
-      {<Handle type="source" position={Position.Bottom} id={handleId} style={{...style}} />}
-    </>
-  );
-};
-
 const handleStyle = { left: 10 };
 function ActionNode({ data }) {
-  const onChange = useCallback((evt) => {
+    const onChange = useCallback((evt) => {
     console.log(evt.target.value);
     console.log("ActionNode onChange");
-  }, []);
-  const { handleId, index, action, current, dispatch } = data;
-  const actionType = action.actionType;
+    }, []);
+    const { index, action, current, dispatch } = data;
+    const actionType = action.actionType;
+    const sourceStyle = {borderColor: "orange", backgroundColor: "orange"};
+    const targetStyle = {
+        width: 0,
+        height: 0,
+        borderTop: "5px solid lightgreen",
+        borderLeft: "5px solid transparent",
+        borderRight: "5px solid transparent",
+        borderBottom: "none",
+        backgroundColor: "transparent",
+        borderRadius: 0
+    };
+    const isSpecialAction = ["IF"].includes(actionType);
  
-  return (
-    <>
-      <ActionHeader action={action} current={current} dispatch={dispatch} />
-      <CustomHandles index={index} actionType={actionType} handleId={handleId} />
-    </>
-  );
+    return (
+        <>
+            <ActionHeader action={action} current={current} dispatch={dispatch} />
+
+            {   index > 0 && <Handle id={action.id} type="target" position={Position.Top} style={{...targetStyle}} /> }
+
+            {   !isSpecialAction && <Handle  type="source" id={action.id} position={Position.Bottom} style={{...sourceStyle}} />}
+
+            {   isSpecialAction && 
+                <>
+                    <Handle  type="source" id={action.id + actionType} position={Position.Bottom} style={{...sourceStyle}} />
+                    <Handle  type="source" id={action.id} position={Position.Right} style={{...sourceStyle}} />
+                </>
+            }
+        </>
+    );
 }
 
 const nodeTypes = { actionNode: ActionNode };
@@ -247,60 +246,106 @@ const BrowserActions = [
         "marginLeft": 0
     }
 ]
+
 //Convert Actions to Nodes and Edges.
+const node_template = (id, data, x, y) => ({
+id,
+// sourcePosition: 'bottom',
+// targetPosition: 'top',
+position:{ x, y},
+data
+});
+const edge_template = (id, source, target, sourceHandle, type, label, color) => ({
+    id,
+    source,
+    target,
+    sourceHandle,
+    type,
+    label,
+    animated: false,
+    style: { stroke: color ? color : "" }
+});
+const nextOfEndActionTargetId = (id, actions) => {
+    let foundId = false;
+    let targetActionId;
+    let done = false;
+
+    actions.forEach((a, index) => {
+        if(a.id === id) foundId = true;
+
+        if(!done && foundId && a.actionType === "END"){
+            targetActionId = index + 1;
+            done = true;
+        }
+    });
+
+    return targetActionId;
+};
+
 const actionsToNodesandEdges = (actions: any) => {
   if(!Array.isArray(actions) || actions.length === 0)
     return [];
 
-  const node_template = (id, data, x, y) => ({
-    id,
-    sourcePosition: 'bottom',
-    targetPosition: 'top',
-    position:{ x, y},
-    data
-  });
-  const edge_template = (id, source, target, type) => ({
-    id,
-    source,
-    target,
-    type,
-    animated: false
-  });
   const v_dist = 100;
   const h_dist = 150;
 
   let edges = [];
   const nodes = actions.map((a, index) => {
-    const handleId = `e${index - 1}-${ index }`;
-    const data = { handleId, index, action: a, current: null, dispatch: null};
+    const data = { index, action: a, current: null, dispatch: null};
 
-    if(index === 0){
-      return {
-        type: "actionNode",
-        ...node_template(a.id, data, 0, index * v_dist)
-      };
-    };
+    if(index > 0){
+        const prevActionType = actions[index - 1].actionType;
+        const edgeId = `e${index - 1}-${ index}`;
 
-    edges.push(
-      edge_template(
-        handleId,
-        actions[index - 1].id,
-        a.id,
-        'smoothstep'
-      )
-    );
+        // Adding an extra edge for special actions
+        if(["IF"].includes(prevActionType)){
+            const specialTargetId = nextOfEndActionTargetId(actions[index - 1].id, actions);
+            edges.push(
+                edge_template(
+                    `e${index - 1}-${specialTargetId}`, //id
+                    String(index-1), //source id
+                    String(nextOfEndActionTargetId(a.id, actions)), //target id
+                    actions[index - 1].id + prevActionType, //sourceHandle id
+                    'smoothstep', //Connection Line type
+                    "false", //label
+                    "red" //stroke color
+                )
+            );    
+        }
+
+        edges.push(
+            edge_template(
+                edgeId, //id
+                String(index-1), //source id
+                String(index), //target id
+                actions[index - 1].id, //sourceHandle id
+                'smoothstep', //Connection Line type
+                prevActionType === "IF" ? "true" : "", //label
+                "lightgreen" //stroke color
+            )
+        );
+    }
 
     return {
-      type: "actionNode",
-      ...node_template(a.id, data, a.nestingLevel * h_dist, index * v_dist)
+        type: "actionNode",
+        ...node_template(
+            String(index), //node id
+            data,
+            index === 0 
+                ? 0 
+                : a.actionType === "END" 
+                    ? a.nestingLevel + 1 * h_dist
+                    : a.nestingLevel * h_dist, //x
+            index * v_dist //y
+        )
     };
   });
 
   return { nodes, edges };
 };
 
-
 export default function ActionsView() {
+
   const n_e = actionsToNodesandEdges(BrowserActions);
   console.log({n_e});
 
