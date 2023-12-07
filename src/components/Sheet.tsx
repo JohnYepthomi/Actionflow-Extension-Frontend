@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { VStack, HStack, Select, Button } from "@chakra-ui/react";
+import { Box, VStack, HStack, Select, Button } from "@chakra-ui/react";
 import Columns from "./Columns";
 import DrivePicker from "./DrivePicker";
 
@@ -35,18 +35,17 @@ const SHEETS_REST_CALLS = {
       );
       const data = await response.json();
       console.log({ data });
-      const currentHeaders =
-        data.values && data.values.length > 0 ? data.values[0] : [];
+      const currentHeaders = data?.values?.length > 0 ? data.values[0] : [];
 
       // Check for existing headers
-      let removeIndexes: number[] = [];
+      let removalIndexes: number[] = [];
       newHeaders.forEach((header, index) => {
         if (currentHeaders.includes(header)) {
-          removeIndexes.push(index);
+          removalIndexes.push(index);
         }
       });
       newHeaders = newHeaders.filter(
-        (_h, index) => !removeIndexes.includes(index)
+        (_h, index) => !removalIndexes.includes(index)
       );
 
       // Avoid making API call if Headers already Exists
@@ -70,8 +69,8 @@ const SHEETS_REST_CALLS = {
           }),
         }
       );
-      const updateData = await updateResponse.json();
-      console.log("Header row updated:", updateData);
+      const updatedData = await updateResponse.json();
+      console.log("Header row updated:", updatedData);
     } catch (error) {
       console.error("Error adding headers:", error);
     }
@@ -89,8 +88,7 @@ const SHEETS_REST_CALLS = {
       );
 
       const data = await response.json();
-      const currentHeaders =
-        data.values && data.values.length > 0 ? data.values[0] : [];
+      const currentHeaders = data?.values?.length > 0 ? data.values[0] : [];
 
       // Arrange values based on headers
       const arrangedRowData = currentHeaders.map(
@@ -198,10 +196,10 @@ function SelectGoogleAccount({ setSelectedAccount }: any) {
   }
 
   return (
-    <VStack>
-      <HStack>
+    <VStack w="100%">
+      <HStack w="100%">
         <Select
-          placeholder="Select Google Account"
+          placeholder="None"
           onChange={(e) => {
             var selectedValue = e.target.value;
             console.log("Selected option: " + selectedValue);
@@ -249,7 +247,7 @@ export default function Sheet() {
   // const group = getRootProps();
 
   return (
-    <VStack>
+    <VStack w="100%" fontSize="0.9rem">
       {/* <VStack alignItems="center" px={4} py={2}>
         <Box>What would you like to do with the sheet ?</Box>
         <HStack {...group}>
@@ -264,26 +262,35 @@ export default function Sheet() {
         </HStack>
       </VStack> */}
 
-      <VStack gap={10}>
-        <SelectGoogleAccount setSelectedAccount={setSelectedAccount} />
+      <VStack gap={5} alignItems="flex-start" w="100%">
+        <VStack alignItems="flex-start" w="100%">
+          <Box>Google Account</Box>
+          <SelectGoogleAccount setSelectedAccount={setSelectedAccount} />
+        </VStack>
 
-        <HStack>
-          <DrivePicker
-            selectedAccount={selectedAccount}
-            pickedSheet={pickedSheet}
-            setPickedSheet={setPickedSheet}
-          />
+        <VStack alignItems="flex-start" w="100%">
+          <Box>Spreadsheet</Box>
 
-          {pickedSheet && (
+          <HStack w="100%">
+            <DrivePicker
+              selectedAccount={selectedAccount}
+              pickedSheet={pickedSheet}
+              setPickedSheet={setPickedSheet}
+            />
+
             <Button
-              colorScheme="blue"
+              colorScheme="twitter"
               onClick={() => window.open(pickedSheet.url, "_blank")}
+              isDisabled={!pickedSheet}
             >
               Open
             </Button>
-          )}
-        </HStack>
+          </HStack>
+        </VStack>
+      </VStack>
 
+      <VStack alignItems="flex-start" mt={10}>
+        <Box>Columns</Box>
         <Columns pairs={pairs} setPairs={setPairs} />
       </VStack>
     </VStack>

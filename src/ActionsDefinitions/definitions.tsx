@@ -38,8 +38,8 @@ export const InteractionDefinitions = [
     svg: () => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
+        width="12"
+        height="12"
         fill="currentColor"
         className="bi bi-arrow-up-left-square"
         viewBox="0 0 16 16"
@@ -64,8 +64,8 @@ export const InteractionDefinitions = [
     svg: () => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
+        width="12"
+        height="12"
         fill="currentColor"
         className="bi bi-keyboard"
         viewBox="0 0 16 16"
@@ -117,8 +117,8 @@ export const InteractionDefinitions = [
     svg: () => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
+        width="12"
+        height="12"
         fill="currentColor"
         className="bi bi-list-stars"
         viewBox="0 0 16 16"
@@ -140,8 +140,8 @@ export const InteractionDefinitions = [
     svg: () => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
+        width="12"
+        height="12"
         fill="currentColor"
         className="bi bi-hash"
         viewBox="0 0 16 16"
@@ -155,8 +155,8 @@ export const InteractionDefinitions = [
     svg: () => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
+        width="12"
+        height="12"
         fill="currentColor"
         className="bi bi-window-stack"
         viewBox="0 0 16 16"

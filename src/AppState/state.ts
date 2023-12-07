@@ -39,6 +39,9 @@ const commonEvents = {
   CREATE_ACTION: {
     actions: ["newAction", "resolveNesting"],
   },
+  DRAG_ACTION_UPDATE: {
+    actions: assign({flowActions: (c, e) => e.payload}),
+  },
   ADD_OPERATOR: {
     actions: ["newOperator"],
   },
@@ -169,7 +172,7 @@ const TAURI_ACTION_TICKER_EVENTS = {
     target: "#Actionflow.idle",
     actions: assign({ currentActionTickerId: null }),
   },
-}
+};
 
 export const AppStateMachine = createMachine<
   TAppContext,
@@ -221,6 +224,13 @@ export const AppStateMachine = createMachine<
             target: "#Actionflow.idle",
             actions: ["updateTauriWorkflow"],
           },
+          DELETE_ACTION: {
+            target: "#Actionflow.idle",
+            actions: assign({
+              flowActions: (c: TAppContext, e) =>
+                c.flowActions.filter((a) => a.id !== e.actionId),
+            }),
+          },
         },
       },
       // dbOperations: { ...DB_SUB_STATE },
@@ -271,14 +281,14 @@ export const AppStateMachine = createMachine<
       resolveNesting: assign({
         flowActions: (c: TAppContext, e) => {
           console.log("resolveNesting called with event: ", e);
-          if(e.type === "CREATE_ACTION"){
+          if (e.type === "CREATE_ACTION" || e.type === "RECORDED_ACTION") {
             if (c?.flowActions?.length > 0) {
-              const updated_actions_nesting = evauateNesting(c.flowActions);
+              const updated_actions_nesting = EvaluateNesting(c.flowActions);
               return updated_actions_nesting;
             }
-          }else if (e.type === "DRAG_EVENT"){
-            if(e?.payload){
-              const updated_actions_nesting = evauateNesting(e.payload);
+          } else if (e.type === "DRAG_EVENT") {
+            if (e?.payload) {
+              const updated_actions_nesting = EvaluateNesting(e.payload);
               return updated_actions_nesting;
             }
           }
@@ -289,7 +299,10 @@ export const AppStateMachine = createMachine<
       updateTab: assign({ flowActions: updateTabAction }),
       updateInteraction: assign({ flowActions: updateInteractionAction }),
       taskActionUpdate: assign({
-        currentActionTickerId: (c: TAppContext, e: TAppEvents) => e.id,
+        currentActionTickerId: (c: TAppContext, e: TAppEvents) => {
+          console.log("updating action ticker id");
+          return e.id;
+        },
       }),
       updateTauriWorkflow: assign({
         flowActions: (c: TAppContext, e: TAppEvents) => e.workflow,
@@ -906,8 +919,8 @@ function restoreFlowActions(context: TAppContext, event: any) {
   return prevActions ? JSON.parse(prevActions) : [];
 }
 
-function evauateNesting(actions: TAction[]) {
-  console.log("evauateNesting() called. event: ", event);
+export function EvaluateNesting(actions: TAction[]) {
+  console.log("EvaluateNesting() called. event: ", event);
 
   const t0 = performance.now();
 

@@ -8,6 +8,16 @@ import type {
 } from "../Schemas/replaceTypes/Actions.js";
 import type { TAppEvents } from "../Schemas/replaceTypes/StateEvents.js";
 import messageTab from "../utils/messageTab";
+import {
+  Box,
+  HStack,
+  VStack,
+  Input,
+  Button,
+  Checkbox,
+  CheckboxGroup,
+  Select as TSelect,
+} from "@chakra-ui/react";
 
 function debounce(fn: any, ms: any) {
   let timer: number | undefined;
@@ -40,8 +50,8 @@ type TDispatchRef<T> = (
 function Common({ action, dispatch }: { action: TIntAction; dispatch: any }) {
   const [selector, setSelector] = React.useState(
     "props" in action &&
-    action.actionType !== "URL" &&
-    action.actionType !== "Code"
+      action.actionType !== "URL" &&
+      action.actionType !== "Code"
       ? action.props.selector
       : ""
   );
@@ -101,38 +111,36 @@ function Common({ action, dispatch }: { action: TIntAction; dispatch: any }) {
   );
 
   return (
-    <div className="common flex-column">
-      <div className="fs-md txt-clr">Selector</div>
-      <div className="flex-row align-center">
-        <input
-        id="action-selector"
-          className="flex-1"
-          type="text"
+    <VStack alignItems="flex-start" w="100%">
+      <Box>Selector</Box>
+      <HStack w="100%">
+        <Input
           placeholder="Css Selector"
           value={selector}
           onChange={handleSelectorChange}
         />
-        <button className="button-60" onClick={() => handlePickElement(action)}>
-          Pick
-        </button>
-      </div>
-    </div>
+        <Button onClick={() => handlePickElement(action)}>Pick</Button>
+      </HStack>
+    </VStack>
   );
 }
 
 function Scroll({ action, dispatch }: { action: any; dispatch: any }) {
   return (
-    <div className="flex-column mt">
-      <div className="fs-md">Scroll Direction</div>
-      <select>
-        <option>Scroll Top</option>
-        <option>Scroll Bottom</option>
-      </select>
-      <div className="flex-column mt">
-        <label className="fs-md">Description</label>
-        <input type="text" placeholder="Enter description" />
-      </div>
-    </div>
+    <VStack alignItems="flex-start" w="100%">
+      <VStack w="100%" alignItems="flex-start" mt={2}>
+        <Box>Scroll Direction</Box>
+        <TSelect>
+          <option>Scroll Top</option>
+          <option>Scroll Bottom</option>
+        </TSelect>
+      </VStack>
+
+      <VStack alignItems="flex-start" w="100%" mt={2}>
+        <Box>Description</Box>
+        <Input placeholder="Enter description" />
+      </VStack>
+    </VStack>
   );
 }
 
@@ -141,6 +149,16 @@ type TClickProps = TClickAction["props"];
 type TClickParams = { action: TClickAction; dispatch: any };
 
 function Click({ action, dispatch }: TClickParams) {
+  const [waitForPageLoad, setWaitForPageLoad] = React.useState<boolean>(
+    action.props["Wait For New Page To Load"]
+  );
+  const [waitForFileDownload, setWaitForFileDownload] = React.useState<boolean>(
+    action.props["Wait For File Download"]
+  );
+  const [description, setDescription] = React.useState<string>(
+    action.props["Description"]
+  );
+
   const dbounceRef = React.useRef<TDispatchRef<TClickProps>>(
     debounce((props: TClickProps, dispatch: any, actionId: string) => {
       dispatch({
@@ -150,68 +168,57 @@ function Click({ action, dispatch }: TClickParams) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handleClickProps = React.useCallback(
-    (e: any) => {
-      const propName = e.target.getAttribute("data-proptype");
-
-      if (propName === "Wait For New Page To Load") {
-        dbounceRef.current(
-          { ...action.props, "Wait For New Page To Load": e.target.checked },
-          dispatch,
-          action.id
-        );
-      }
-      if (propName === "Wait For File Download") {
-        dbounceRef.current(
-          { ...action.props, "Wait For File Download": e.target.checked },
-          dispatch,
-          action.id
-        );
-      }
-      if (propName === "Description") {
-        dbounceRef.current(
-          { ...action.props, Description: e.target.value },
-          dispatch,
-          action.id
-        );
-      }
-    },
-    [action]
-  );
-
   return (
-    <div className="flex-column mt">
-      <div className="flex-row align-center fs-md">
-        <input
-          type="checkbox"
-          defaultChecked={action.props["Wait For New Page To Load"]}
-          data-proptype="Wait For New Page To Load"
-          onChange={handleClickProps}
+    <VStack alignItems="flex-start" w="100%" mt={2}>
+      <HStack>
+        <Checkbox
+          isChecked={waitForPageLoad}
+          onChange={(e: any) => {
+            setWaitForPageLoad(e.target.checked);
+            dbounceRef.current(
+              {
+                ...action.props,
+                "Wait For New Page To Load": e.target.checked,
+              },
+              dispatch,
+              action.id
+            );
+          }}
         />
-        Wait for New Page to Load
-      </div>
+        <Box>Wait for New Page to Load </Box>
+      </HStack>
 
-      <div className="flex-row align-center fs-md">
-        <input
-          type="checkbox"
-          defaultChecked={action.props["Wait For File Download"]}
-          data-proptype="Wait For File Download"
-          onChange={handleClickProps}
+      <HStack>
+        <Checkbox
+          isChecked={waitForFileDownload}
+          onChange={(e: any) => {
+            setWaitForFileDownload(e.target.checked);
+            dbounceRef.current(
+              { ...action.props, "Wait For File Download": e.target.checked },
+              dispatch,
+              action.id
+            );
+          }}
         />
-        Wait For File Download
-      </div>
+        <Box>Wait For File Download </Box>
+      </HStack>
 
-      <div className="flex-column mt">
-        <label className="fs-md">Description (optional)</label>
-        <input
-          type="text"
+      <VStack alignItems="flex-start" w="100%" mt={2}>
+        <Box>Description (optional)</Box>
+        <Input
           placeholder="Enter description"
-          value={action.props["Description"]}
-          data-proptype="Description"
-          onChange={handleClickProps}
+          value={description}
+          onChange={(e: any) => {
+            setDescription(e.target.value);
+            dbounceRef.current(
+              { ...action.props, Description: e.target.value },
+              dispatch,
+              action.id
+            );
+          }}
         />
-      </div>
-    </div>
+      </VStack>
+    </VStack>
   );
 }
 
@@ -224,6 +231,9 @@ type TTypeParams = {
 
 function Type({ action, dispatch }: TTypeParams) {
   const [text, setText] = React.useState(action.props.Text);
+  const [overwriteText, setOverwriteText] = React.useState(
+    action.props["Overwrite Existing Text"]
+  );
 
   const dbounceRef = React.useRef<TDispatchRef<TTypeProps>>(
     debounce((props: TTypeProps, dispatch: any, actionId: string) => {
@@ -237,50 +247,40 @@ function Type({ action, dispatch }: TTypeParams) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handleTypePropChange = React.useCallback(
-    (e: any) => {
-
-      setText(e.target.value);
-
-      const actionType = e.target.getAttribute("data-proptype");
-      if (actionType === "typing-text") {
-        dbounceRef.current(
-          { ...action.props, Text: e.target.value },
-          dispatch,
-          action.id
-        );
-      }
-      if (actionType === "overwrite-text") {
-        dbounceRef.current(
-          { ...action.props, "Overwrite Existing Text": e.target.checked },
-          dispatch,
-          action.id
-        );
-      }
-    },
-    [action]
-  );
-
   return (
-    <div className="flex-column mt">
-      <div className="fs-md">Text</div>
-      <input
-        type="text"
-        placeholder="Type Text"
-        value={text}
-        data-proptype="typing-text"
-        onChange={handleTypePropChange}
-      />
-      <div className="flex-row align-center fs-md">
-        <input
-          type="checkbox"
-          checked={action.props["Overwrite Existing Text"]}
-          data-proptype="overwrite-text"
-          onChange={handleTypePropChange}
+    <VStack alignItems="flex-start" w="100%">
+      <VStack alignItems="flex-start" w="100%">
+        <Box fontSize="0.75rem">Text</Box>
+        <Input
+          type="text"
+          placeholder="Type Text"
+          value={text}
+          onChange={(e: any) => {
+            setText(e.target.value);
+            dbounceRef.current(
+              { ...action.props, Text: e.target.value },
+              dispatch,
+              action.id
+            );
+          }}
         />
-        Overwrite Existing Text
-      </div>
-    </div>
+      </VStack>
+      <HStack w="100%">
+        <Checkbox
+          onChange={(e: any) => {
+            setOverwriteText(e.target.checked);
+            dbounceRef.current(
+              { ...action.props, "Overwrite Existing Text": e.target.checked },
+              dispatch,
+              action.id
+            );
+          }}
+          isChecked={overwriteText}
+        >
+          Overwrite Existing Text
+        </Checkbox>
+      </HStack>
+    </VStack>
   );
 }
 
@@ -301,29 +301,21 @@ function Hover({ action, dispatch }: THoverParams) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handlerDescriptionChange = React.useCallback(
-    (e: any) => {
-      dbounceRef.current(
-        { ...action.props, Description: e.target.value },
-        dispatch,
-        action.id
-      );
-    },
-    [action]
-  );
-
   return (
-    <div className="flex-column mt">
-      <div className="flex-column">
-        <label className="fs-md">Description (Optional)</label>
-        <input
-          type="text"
-          placeholder="Enter description"
-          value={action.props["Description"]}
-          onChange={handlerDescriptionChange}
-        />
-      </div>
-    </div>
+    <VStack alignItems="flex-start" w="100%" mt={2}>
+      <Box>Description (Optional)</Box>
+      <Input
+        placeholder="Enter description"
+        value={action.props["Description"]}
+        onChange={(e: any) =>
+          dbounceRef.current(
+            { ...action.props, Description: e.target.value },
+            dispatch,
+            action.id
+          )
+        }
+      />
+    </VStack>
   );
 }
 
@@ -331,6 +323,10 @@ type TKeypressAction = TResolveAction<"Keypress">;
 type TKeypressProps = TKeypressAction["props"];
 type TkeypressParams = { action: TKeypressAction; dispatch: any };
 function Keypress({ action, dispatch }: TkeypressParams) {
+  const [key, setKey] = React.useState(action.props["Key"]);
+  const [waitForPageLoad, setWaitForPageLoad] = React.useState(
+    action.props["Wait For Page To Load"]
+  );
   const keypressDispatchRef = React.useRef<TDispatchRef<TKeypressProps>>(
     debounce((props: TKeypressProps, dispatch: any, actionId: string) => {
       dispatch({
@@ -343,56 +339,51 @@ function Keypress({ action, dispatch }: TkeypressParams) {
     }, DEBOUNCE_DELAY)
   );
 
-  function handleKeypressChange(e: any) {
-    if (e.target.getAttribute("data-proptype") === "key") {
-      keypressDispatchRef.current(
-        { ...action.props, Key: e.target.value },
-        dispatch,
-        action.id
-      );
-    }
-    if (e.target.getAttribute("data-proptype") === "wait-for-page-load") {
-      keypressDispatchRef.current(
-        { ...action.props, "Wait For Page To Load": e.target.checked },
-        dispatch,
-        action.id
-      );
-    }
-  }
-
   return (
-    <div className="flex-column mt">
-      <div className="flex-column">
-        <label className="fs-md">Key</label>
-        <div className="flex-row align-center">
-          <input
-            type="text"
-            value={action.props["Key"]}
-            data-proptype="key"
-            onChange={handleKeypressChange}
+    <VStack alignItems="flex-start" w="100%">
+      <VStack alignItems="flex-start" w="100%">
+        <Box>Key</Box>
+        <HStack w="100%">
+          <Input
+            value={key}
+            placeholder="Enter Key"
+            onChange={(e: any) => {
+              setKey(e.target.key);
+              keypressDispatchRef.current(
+                { ...action.props, Key: e.target.value },
+                dispatch,
+                action.id
+              );
+            }}
           />
-          <button>Detect</button>
-        </div>
-      </div>
-      <div className="flex-row align-center fs-md">
-        <input
-          type="checkbox"
-          checked={action.props["Wait For Page To Load"]}
-          data-proptype="wait-for-page-load"
-          onChange={handleKeypressChange}
+          <Button w="20%">Detect</Button>
+        </HStack>
+      </VStack>
+
+      <HStack>
+        <Checkbox
+          isChecked={waitForPageLoad}
+          onChange={(e: any) => {
+            setWaitForPageLoad(e.target.checked);
+            keypressDispatchRef.current(
+              { ...action.props, "Wait For Page To Load": e.target.checked },
+              dispatch,
+              action.id
+            );
+          }}
         />
-        <div> Wait for new page to load</div>
-      </div>
-    </div>
+        <Box> Wait for new page to load</Box>
+      </HStack>
+    </VStack>
   );
 }
 
 function Upload({ action, dispatch }: { action: any; dispatch: any }) {
   return (
-    <div className="flex-column mt">
-      <label className="fs-md">Path</label>
-      <input type="text" placeholder="eg. /documents/file/names.txt" />
-    </div>
+    <VStack alignItems="flex-start" w="100%" mt={2}>
+      <Box>Path</Box>
+      <Input placeholder="eg. /documents/file/names.txt" />
+    </VStack>
   );
 }
 
@@ -401,6 +392,11 @@ type TSelectProps = TSelectAction["props"];
 type TSelectParams = { action: TSelectAction; dispatch: any };
 
 function Select({ action, dispatch }: TSelectParams) {
+  const [description, setDescription] = React.useState<string>(
+    action.props.Description
+  );
+  const [selected, setSelected] = React.useState(action.props.Selected);
+
   const SelectDispatchRef = React.useRef<TDispatchRef<TSelectAction>>(
     debounce((props: TSelectProps, dispatch: any, actionId: string) => {
       dispatch({
@@ -413,76 +409,77 @@ function Select({ action, dispatch }: TSelectParams) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handleSelectChange = React.useCallback(
-    (e: any) => {
-      if (e.target.getAttribute("data-proptype") === "select-value") {
-        SelectDispatchRef.current(
-          { ...action.props, Selected: e.target.value },
-          dispatch,
-          action.id
-        );
-      }
-      if (e.target.getAttribute("data-proptype") === "select-description") {
-        SelectDispatchRef.current(
-          { ...action.props, Description: e.target.value },
-          dispatch,
-          action.id
-        );
-      }
-    },
-    [action]
-  );
-
   return (
-    <div className="flex-column mt">
-      <div className="flex-column">
-        <label className="fs-md">Value</label>
-        {/* <input type="text" value={selectProps["Value"]} data-proptype="select-value" onChange={handleSelectChange} /> */}
-        <select>
+    <VStack w="100%">
+      <VStack alignItems="flex-start" w="100%" mt={2}>
+        <Box>Value</Box>
+        <TSelect
+          onChange={(e: any) => {
+            setSelected(e.target.value);
+            SelectDispatchRef.current(
+              { ...action.props, Selected: e.target.value },
+              dispatch,
+              action.id
+            );
+          }}
+        >
           {action.props?.Options?.map((option, index) => {
             return (
-              <option key={index} selected={option.toUpperCase() === action.props.Selected.toUpperCase()}>
+              <option
+                key={index}
+                selected={option.toUpperCase() === selected.toUpperCase()}
+              >
                 {option}
               </option>
             );
           })}
-        </select>
-      </div>
-      <div className="flex-column">
-        <label className="fs-md">Description</label>
-        <input
-          type="text"
-          value={action.props.Description}
-          data-proptype="select-description"
-          onChange={handleSelectChange}
+        </TSelect>
+      </VStack>
+
+      <VStack alignItems="flex-start" w="100%" mt={2}>
+        <Box>Description</Box>
+        <Input
+          placeholder="Enter Description"
+          value={description}
+          onChange={(e: any) => {
+            setDescription(e.target.value);
+            SelectDispatchRef.current(
+              { ...action.props, Description: e.target.value },
+              dispatch,
+              action.id
+            );
+          }}
         />
-      </div>
-    </div>
+      </VStack>
+    </VStack>
   );
 }
 
 function Date({ action, dispatch }: { action: any; dispatch: any }) {
   return (
-    <div className="flex-column mt">
-      <label className="fs-md">Date</label>
-      <input type="text" />
-    </div>
+    <VStack alignItems="flex-start" w="100%" mt={2}>
+      <Box className="fs-md">Date</Box>
+      <Input type="text" placeholder="Select Date" />
+    </VStack>
   );
 }
 
 function Prompts({ action, dispatch }: { action: any; dispatch: any }) {
   return (
-    <div className="flex-column mt">
-      <label className="fs-md">Response Type</label>
-      <select>
-        <option>Accept</option>
-        <option>Decline</option>
-      </select>
-      <div className="flex-column mt txt-clr fs-md">
-        <div>Response Text (Optional)</div>
-        <input type="text" />
-      </div>
-    </div>
+    <VStack alignItems="flex-start" w="100%">
+      <VStack alignItems="flex-start" w="100%">
+        <Box>Response Type</Box>
+        <TSelect>
+          <option>Accept</option>
+          <option>Decline</option>
+        </TSelect>
+      </VStack>
+
+      <VStack alignItems="flex-start" w="100%" mt={2}>
+        <Box>Response Text (Optional)</Box>
+        <Input type="text" placeholder="Enter Response Text" />
+      </VStack>
+    </VStack>
   );
 }
 
@@ -505,6 +502,8 @@ type TListProps = TListAction["props"];
 type TListParams = { action: TListAction; dispatch: any };
 
 function List({ action, dispatch }: TListParams) {
+  const [variable, setVariable] = React.useState(action.props.variable);
+
   const ListDispatchRef = React.useRef<TDispatchRef<TListAction>>(
     debounce((props: TListProps, dispatch: any, actionId: string) => {
       dispatch({
@@ -517,34 +516,25 @@ function List({ action, dispatch }: TListParams) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handleListChange = React.useCallback(
-    (e: any) => {
-      ListDispatchRef.current(
-        { ...action.props, variable: e.target.value },
-        dispatch,
-        action.id
-      );
-    },
-    [action]
-  );
-
   return (
-    <>
-      <div className="flex-column mt txt-clr fs-md">
-        <div className="fs-md">Variable</div>
-        <div className="flex-row mt txt-clr fs-md">
-          <div className="dollar-prefix">$</div>
-          <input
-            className="w-100"
-            value={action.props.variable}
-            onChange={handleListChange}
-            type="text"
-            data-variable="true"
-            placeholder="variable name. Refer to this variable using '$ + variable_name'"
-          />
-        </div>
-      </div>
-    </>
+    <VStack alignItems="flex-start" w="100%" mt={2}>
+      <Box>Variable</Box>
+      <HStack w="100%">
+        <Box className="dollar-prefix">$</Box>
+        <Input
+          value={variable}
+          onChange={(e: any) => {
+            setVariable(e.target.value);
+            ListDispatchRef.current(
+              { ...action.props, variable: e.target.value },
+              dispatch,
+              action.id
+            );
+          }}
+          placeholder="variable name. Refer to this variable using '$ + variable_name'"
+        />
+      </HStack>
+    </VStack>
   );
 }
 
@@ -567,34 +557,27 @@ function Text({ action, dispatch }: TTextParams) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handleTextChange = React.useCallback(
-    (e: any) => {
-      setVariable(e.target.value);
-      TextDispatchRef.current(
-        { ...action.props, variable: e.target.value },
-        dispatch,
-        action.id
-      );
-    },
-    [action]
-  );
-
   return (
-    <div className="flex-column mt txt-clr fs-md">
-      <div className="fs-md">Variable</div>
-      <div className="flex-row mt txt-clr fs-md">
-        <div className="dollar-prefix">$</div>
-        <input
+    <VStack alignItems="flex-start" w="100%" mt={2}>
+      <Box>Variable</Box>
+      <HStack w="100%">
+        <Box>$</Box>
+        <Input
           id="action-variable"
-          className="w-100"
           value={variable}
-          onChange={handleTextChange}
+          onChange={(e: any) => {
+            setVariable(e.target.value);
+            TextDispatchRef.current(
+              { ...action.props, variable: e.target.value },
+              dispatch,
+              action.id
+            );
+          }}
           type="text"
-          data-variable="true"
           placeholder="variable name"
         />
-      </div>
-    </div>
+      </HStack>
+    </VStack>
   );
 }
 
@@ -617,56 +600,43 @@ function Attribute({ action, dispatch }: TAttributeParams) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handleAttributeChange = React.useCallback(
-    (e: any) => {
-      AttributeDispatchRef.current(
-        { ...action.props, attribute: e.target.value },
-        dispatch,
-        action.id
-      );
-
-      setAttribute(e.target.value);
-    },
-    [action]
-  );
-
-  const handleVariableChange = React.useCallback((e: any)=>{
-    AttributeDispatchRef.current(
-      { ...action.props, variable: e.target.value },
-      dispatch,
-      action.id
-    );    
-    setVariable(e.target.value);
-  },[action])
-
   return (
-    <>
-      <div className="flex-column mt txt-clr fs-md">
-        <div className="fs-md">Attribute</div>
-        <input
-          id="attribute"
-          className="w-100"
+    <VStack w="100%">
+      <VStack alignItems="flex-start" mt={2} w="100%">
+        <Box>Attribute</Box>
+        <Input
           value={attribute}
-          type="text"
-          data-proptype="attribute"
-          onChange={handleAttributeChange}
+          onChange={(e: any) => {
+            setAttribute(e.target.value);
+            AttributeDispatchRef.current(
+              { ...action.props, attribute: e.target.value },
+              dispatch,
+              action.id
+            );
+          }}
           placeholder="attribute name"
         />
-        <div className="fs-md">Variable</div>
-        <div className="flex-row mt txt-clr fs-md">
-          <div className="dollar-prefix">$</div>
-          <input
-            className="w-100"
+      </VStack>
+
+      <VStack alignItems="flex-start" mt={2} w="100%">
+        <Box>Variable</Box>
+        <HStack w="100%">
+          <Box>$</Box>
+          <Input
             value={variable}
-            onChange={handleVariableChange}
-            type="text"
-            data-proptype="variable"
-            data-variable="true"
+            onChange={(e: any) => {
+              setVariable(e.target.value);
+              AttributeDispatchRef.current(
+                { ...action.props, variable: e.target.value },
+                dispatch,
+                action.id
+              );
+            }}
             placeholder="variable name. Refer to this variable using '$ + variable_name'"
           />
-        </div>
-      </div>
-    </>
+        </HStack>
+      </VStack>
+    </VStack>
   );
 }
 
@@ -723,6 +693,7 @@ type TURLProps = TURLAction["props"];
 type TURLParams = { action: TURLAction; dispatch: any };
 
 function URL({ action, dispatch }: TURLParams) {
+  const [variable, setVariable] = React.useState(action.props.variable);
   const URLDispatchRef = React.useRef<TDispatchRef<TURLAction>>(
     debounce((props: TURLProps, dispatch: any, actionId: string) => {
       dispatch({
@@ -735,34 +706,25 @@ function URL({ action, dispatch }: TURLParams) {
     }, DEBOUNCE_DELAY)
   );
 
-  const handleURLChange = React.useCallback(
-    (e: any) => {
-      URLDispatchRef.current(
-        { ...action.props, variable: e.target.value },
-        dispatch,
-        action.id
-      );
-    },
-    [action]
-  );
-
   return (
-    <>
-      <div className="flex-column mt txt-clr fs-md">
-        <div className="fs-md">Variable</div>
-        <div className="flex-row mt txt-clr fs-md">
-          <div className="dollar-prefix">$</div>
-          <input
-            className="w-100"
-            value={action.props.variable}
-            onChange={handleURLChange}
-            type="text"
-            data-variable="true"
-            placeholder="variable name. Refer to this variable using '$ + variable_name'"
-          />
-        </div>
-      </div>
-    </>
+    <VStack w="100%" alignItems="flex-start">
+      <Box>Variable</Box>
+      <HStack w="100%">
+        <Box>$</Box>
+        <Input
+          value={variable}
+          onChange={(e: any) => {
+            setVariable(e.target.value);
+            URLDispatchRef.current(
+              { ...action.props, variable: e.target.value },
+              dispatch,
+              action.id
+            );
+          }}
+          placeholder="variable name. Refer to this variable using '$ + variable_name'"
+        />
+      </HStack>
+    </VStack>
   );
 }
 

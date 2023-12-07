@@ -1,226 +1,197 @@
 import { useEffect, useRef, useState, useCallback, memo } from "react";
 import ActionHeader from "./ActionHeader";
 import ActionDetails from "./ActionDetails";
-import { motion, useAnimationControls } from "framer-motion";
 import { TAction } from "../../Schemas/replaceTypes/Actions";
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+import {
+  HStack,
+  VStack,
+  Input,
+  Button,
+  Box,
+  IconButton,
+  Center,
+} from "@chakra-ui/react";
+import { GoGrabber } from "react-icons/go";
+import { EvaluateNesting } from "../../AppState/state";
 
-//WEBKIT ACTIONS IMPORT
-// import Card from '../../../../components/SortableList/Card';
-// import update from 'immutability-helper';
-// import { DndProvider } from 'react-dnd';
-// import { HTML5Backend } from 'react-dnd-html5-backend';
-// import { logger } from "../../../../logger";
+const StrictModeDroppable = ({ children, ...props }) => {
+  /**
+   * Makes <Droppable> work with strict mode on.
+   * @Ref : https://github.com/atlassian/react-beautiful-dnd/issues/2399
+   */
+  const [enabled, setEnabled] = useState(false);
 
-function getAnimationClassNames<T extends number>(
-  index: T,
-  movedItem: T,
-  draggedItem: T
-): string {
-  if (movedItem !== index) return "";
-  if (movedItem - draggedItem > 0) return "moved-down";
-  else return "move-up";
-}
+  useEffect(() => {
+    const animation = requestAnimationFrame(() => setEnabled(true));
 
-const isWebkit =
-  /Safari/.test(navigator.userAgent) && /Apple Computer/.test(navigator.vendor);
+    return () => {
+      cancelAnimationFrame(animation);
+      setEnabled(false);
+    };
+  }, []);
 
-let itemColor = "";
+  if (!enabled) {
+    return null;
+  }
 
-const ChromeActions = ({
+  return <Droppable {...props}>{children}</Droppable>;
+};
+
+const Actions = ({
   current,
   dispatch,
   service,
+  updateAppDatabase,
 }: {
-  dispatch: any;
   current: any;
+  dispatch: any;
   service: any;
+  updateAppDatabase: any;
 }) => {
   const [localActions, setLocalActions] = useState<TAction[]>(
     current.context.flowActions
-  ); // local state is required to facilitate drag and drop
-  const initialDraggedPos = useRef<number>();
-  const movedPos = useRef<number>();
-  const enterPos = useRef<number>();
-  const draggedPos = useRef<number>();
-  const controls = useAnimationControls();
-  const tempMarginLeft = useRef<string>();
-  const [isDnD, setIsDnD] = useState<boolean>(false);
+  );
+  const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
+  const [clickedAction, setClickedAction] = useState<string>();
+  const getItemStyle = useCallback(
+    (isDragging) => ({
+      userSelect: isDragging ? "none" : "auto",
+      cursor: isDragging ? "grabbing" : "pointer",
+    }),
+    []
+  );
+  const dragContainerRef = useRef();
 
-  // CHROME DRAG EVENTS HANDLERS
-  const handleDragStart = (e: any, index: number) => {
-    console.log("handleDragStart");
-    e.dataTransfer.effectAllowed = "move";
-    const clonedNode = e.target.cloneNode(true);
-    e.dataTransfer.setDragImage(clonedNode, 0, 0);
-    // clonedNode.style.opacity = "0.5";
-    // e.dataTransfer.setData("text/plain", "some_dummy_data"); // firefox
-    itemColor = e.target.style.backgroundColor;
-    tempMarginLeft.current = e.target.style.marginLeft;
-    e.target.style.marginLeft = "";
-    draggedPos.current = index;
-    initialDraggedPos.current = index;
-  };
-  const handleDragEnter = (e: any, index: number) => {
-    if (enterPos.current) return;
-    else enterPos.current = index;
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
 
-    if (draggedPos?.current !== index) {
-      const t0 = performance.now();
+    const newPairs = Array.from(localActions);
+    const [movedPair] = newPairs.splice(result.source.index, 1);
+    newPairs.splice(result.destination.index, 0, movedPair);
 
-      let newItems = [...localActions];
-      const dragItem = newItems[draggedPos.current];
-      newItems.splice(draggedPos.current, 1);
-      newItems.splice(index, 0, dragItem);
+    const computed = EvaluateNesting(newPairs);
+    setLocalActions(computed);
 
-      movedPos.current = draggedPos.current;
-      draggedPos.current = index;
-
-      const t1 = performance.now();
-      console.log(`Items Switching took ${t1 - t0} milliseconds.`);
-
-      setLocalActions((state) => newItems);
-    }
-  };
-  const handleDragLeave = (e: any, index: number) => {
-    enterPos.current = undefined;
-  };
-  const handleDragEnd = (e: any, index: number) => {
-    e.target.style.backgroundColor = itemColor;
-    e.target.style.marginLeft = tempMarginLeft.current;
-
-    if (initialDraggedPos.current !== draggedPos.current) {
-      dispatch({
-        type: "DRAG_EVENT",
-        payload: localActions,
-      });
+    if(!updateAppDatabase){
+      setTimeout(() => {
+        dispatch({type: "DRAG_ACTION_UPDATE", payload: computed });
+      }, 500)
     }
 
-    resetRefs();
+    // Used in Tauri's Webkit Context.
+    if (updateAppDatabase) updateAppDatabase(computed);
+
+    if (dragContainerRef.current) {
+      dragContainerRef.current.style.height = "100%";
+    }
   };
 
-  /* --------- LINES ANIMATION --------- */
   useEffect(() => {
-    controls.start("visible");
-  }, [controls, localActions]);
-
-  useEffect(() => {
-    // console.log("Workflow -> Actions -> localActions: ", localActions);
-    setLocalActions((state) => current.context.flowActions);
+    setLocalActions(current.context.flowActions);
   }, [current.context.flowActions]);
 
-  function resetRefs() {
-    console.log("resetting refs...");
-    enterPos.current = undefined;
-    movedPos.current = undefined;
-    draggedPos.current = undefined;
-    initialDraggedPos.current = undefined;
-  }
+  const container_padding_x = 3;
 
-  return (
-    <ul className="workflow-ul">
-      {localActions.map((action, index) => {
-        const nest_width_decrease_factor = action.nestingLevel * 15;
+  const renderActions = useCallback(
+    () => (
+      <DragDropContext
+        onDragEnd={handleDragEnd}
+        onBeforeCapture={(info) => {
+          const dragged_item = document.querySelector(
+            `[data-rbd-draggable-id="${info.draggableId}"]`
+          );
 
-        return (
-          <motion.li
-            key={action.id}
-            type="react-dnd"
-            draggable
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragEnter={(e) => handleDragEnter(e, index)}
-            onDragLeave={(e) => handleDragLeave(e, index)}
-            onDragEnd={(e) => handleDragEnd(e, index)}
-            className={getAnimationClassNames(
-              index,
-              movedPos.current!,
-              draggedPos.current!
-            )}
-            style={{
-              position: "relative",
-              width:
-                nest_width_decrease_factor === 0
-                  ? "100%"
-                  : `calc(400px - ${nest_width_decrease_factor}px`,
-              alignSelf: action.nestingLevel > 0 ? "flex-end" : "center",
-            }}
-          >
-            <ActionHeader action={action} animateControl={controls} />
-            <ActionDetails
-              action={action}
-              localActions={localActions}
-              dispatch={dispatch}
-              current={current}
-              service={service}
-            />
-          </motion.li>
-        );
-      })}
-    </ul>
+          if (dragged_item) {
+            const container = dragged_item.parentElement;
+            const height = container.clientHeight;
+
+            dragged_item.style.height = "42px";
+            dragContainerRef.current = container;
+            container.style.height = `${height}px`;
+          }
+
+          setClickedAction("");
+        }}
+      >
+        <StrictModeDroppable droppableId="pairs">
+          {(provided, snapshot) => {
+            return (
+              <VStack
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                spacing={4}
+                w={`${400 + container_padding_x * 10}px`}
+                overflowX="auto"
+                py={3}
+                h="100%"
+                px={container_padding_x}
+                gap={2}
+              >
+                {localActions.map((action, index) => {
+                  const computed_width = action.nestingLevel * 15;
+
+                  return (
+                    <Draggable
+                      key={action.id}
+                      draggableId={action.id}
+                      index={index}
+                    >
+                      {(provided, snapshot) => {
+                        return (
+                          <VStack
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            w={
+                              computed_width === 0
+                                ? "100%"
+                                : `calc(400px - ${computed_width}px)`
+                            }
+                            alignSelf={
+                              action.nestingLevel > 0 ? "flex-end" : "auto"
+                            }
+                            style={{
+                              ...provided.draggableProps.style,
+                              cursor: snapshot.isDragging ? "grab" : "pointer",
+                            }}
+                            gap={0}
+                          >
+                            <ActionHeader
+                              action={action}
+                              current={current}
+                              isDragging={snapshot.isDragging}
+                              dispatch={dispatch}
+                              setClickedAction={setClickedAction}
+                              isDetailsVisible={clickedAction === action.id}
+                            />
+
+                            {clickedAction === action.id && (
+                              <ActionDetails
+                                action={action}
+                                localActions={localActions}
+                                dispatch={dispatch}
+                                current={current}
+                                service={service}
+                              />
+                            )}
+                          </VStack>
+                        );
+                      }}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
+              </VStack>
+            );
+          }}
+        </StrictModeDroppable>
+      </DragDropContext>
+    ),
+    [clickedAction, current, localActions]
   );
+
+  return renderActions();
 };
 
-//WEBKIT ACTIONS    ::::: DO NOT DELETE :::::
-// const SortableActions = ({ current, dispatch }:{current: any, dispatch: any}) => {
-//   const [cards, setCards] = useState<TAction>(current.context.flowActions);
-//   // const [hasMoved, setHasMoved] = useState<boolean>(false);
-//   const moveCard = useCallback((dragIndex: number, hoverIndex: number) => {
-//       // setHasMoved(state => !state);
-//       setCards((prevCards) =>
-//       update(prevCards, {
-//           $splice: [
-//           [dragIndex, 1],
-//           [hoverIndex, 0, prevCards[dragIndex]],
-//           ],
-//       }),
-//       )
-//   }, []);
-
-//   useEffect(()=>{
-//       setCards(current.context.flowActions);
-//   },[current.context.flowActions]);
-
-//   // useEffect(()=>{
-//   //     if(hasMoved){
-//   //         // dispatch({type: "DRAG_EVENT", payload: cards});
-//   //     }
-//   // },[hasMoved])
-
-//   logger.log("=====rendered===== SORTABLEACTIONS COMPONENT")
-
-//   const renderCard = useCallback((card, index) => {
-//       return (
-//           <Card
-//               key={card.id}
-//               id={card.id}
-//               index={index}
-//               card={card}
-//               moveCard={moveCard}
-//               cards={cards}
-//               current={current}
-//               dispatch={dispatch}
-//           />
-//       )
-//   }, []);
-
-//   return (
-//       <ul className="workflow-ul" style={{ overflowX: "hidden", overflowY: "scroll" }}>
-//           {
-//               cards.map( (card, i) => renderCard(card, i))
-//           }
-//       </ul>
-//   );
-// }
-// const WebkitActions = ({ dispatch, current }:{current: any, dispatch: any}) => {
-//   console.log("======rendered====== ACTIONS COMPONENT , flowActions: ", current.context.flowActions);
-
-//   return (
-//       <DndProvider backend={HTML5Backend}>
-//           <SortableActions dispatch={dispatch} current={current}/>
-//       </DndProvider>
-//   );
-// };
-
-// const finalExp = isWebkit ? WebkitActions : ChromeActions;
-// export default memo(WebkitActions);
-
-export default memo(ChromeActions);
+export default memo(Actions);

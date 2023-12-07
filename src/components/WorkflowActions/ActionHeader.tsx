@@ -2,9 +2,28 @@ import {
   TAction,
   THeaderInfoActions,
 } from "../../Schemas/replaceTypes/Actions";
-import type { AnimationControls } from "framer-motion";
 import { InteractionDefinitions } from "../../ActionsDefinitions/definitions";
-import React from "react";
+import { useEffect, useCallback } from "react";
+import {
+  Box,
+  HStack,
+  VStack,
+  Center,
+  Button,
+  IconButton,
+} from "@chakra-ui/react";
+import { TiDelete } from "react-icons/ti";
+
+const header_info_style = {
+  alignSelf: "flex-start",
+  width: "200px",
+  pointerEvents: "none",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  overflowX: "hidden",
+  color: "skyblue",
+  // paddingLeft: "20px",
+};
 
 function HeaderInfo<T extends THeaderInfoActions>({ action }: { action: T }) {
   if (
@@ -14,54 +33,24 @@ function HeaderInfo<T extends THeaderInfoActions>({ action }: { action: T }) {
     action.actionType === "URL"
   )
     return (
-      <div
-        style={{
-          pointerEvents: "none",
-          width: 300 - action.nestingLevel * 15,
-          textOverflow: "ellipsis",
-          height: "fit-content",
-          whiteSpace: "nowrap",
-          overflowX: "hidden",
-          color: "orange",
-        }}
-      >
+      <Box fontSize={["0.65rem", "0.75rem"]} sx={header_info_style}>
         {action.props.value}
-      </div>
+      </Box>
     );
   else if (
-    action.actionType === "Click" ||
-    (action.actionType == "Select" && action.props.Description !== "")
+    (action.actionType === "Click" || action.actionType == "Select") &&
+    action.props.Description !== ""
   )
     return (
-      <div
-        style={{
-          pointerEvents: "none",
-          width: 300 - action.nestingLevel * 15,
-          textOverflow: "ellipsis",
-          height: "fit-content",
-          whiteSpace: "nowrap",
-          overflowX: "hidden",
-          color: "orange",
-        }}
-      >
+      <Box fontSize={["0.65rem", "0.75rem"]} sx={header_info_style}>
         {action.props.Description}
-      </div>
+      </Box>
     );
   else if (action.actionType === "Type" && action.props.Text !== "") {
     return (
-      <div
-        style={{
-          pointerEvents: "none",
-          width: 300 - action.nestingLevel * 15,
-          textOverflow: "ellipsis",
-          height: "fit-content",
-          whiteSpace: "nowrap",
-          overflowX: "hidden",
-          color: "orange",
-        }}
-      >
+      <Box fontSize={["0.65rem", "0.75rem"]} sx={header_info_style}>
         {action.props.Text}
-      </div>
+      </Box>
     );
   } else if (
     ["NewTab", "SelectTab", "SelectWindow", "CloseTab", "Navigate"].includes(
@@ -71,63 +60,63 @@ function HeaderInfo<T extends THeaderInfoActions>({ action }: { action: T }) {
     action.props.url !== ""
   ) {
     return (
-      <div
-        style={{
-          pointerEvents: "none",
-          width: 300 - action.nestingLevel * 15,
-          textOverflow: "ellipsis",
-          height: "fit-content",
-          whiteSpace: "nowrap",
-          overflowX: "hidden",
-          color: "orange",
-        }}
-      >
+      <Box fontSize={["0.65rem", "0.75rem"]} sx={header_info_style}>
         {action.props.url}
-      </div>
+      </Box>
     );
   }
 
   return <></>;
 }
 
-function ActionHeader({
+export default function ActionHeader({
   action,
-  animateControl,
+  current,
+  dispatch,
 }: {
   action: any;
-  animateControl: AnimationControls;
+  current: any;
+  dispatch: any;
 }) {
-  const handleAnimate = React.useCallback((control: any) => {
-    control.set("hidden");
-    control.start("visible");
-  }, []);
 
-  const handleHeaderClick = React.useCallback((e: any) => {
-    const detailsEl = e.target.parentElement.querySelector(".action-details");
-
-    if (detailsEl) {
-      const attr_val = JSON.parse(detailsEl.getAttribute("data-show-details"));
-      if (attr_val) detailsEl.setAttribute("data-show-details", "false");
-      else detailsEl.setAttribute("data-show-details", "true");
-    }
-  }, []);
-
-  const renderActionHeader = React.useCallback(() => {
+  const renderActionHeader = useCallback(() => {
     return (
-      <div className="action-header gap-1" onClick={handleHeaderClick}>
-        <div className="flex-row" style={{ pointerEvents: "none" }}>
-          <div className="flex-row align-center justify-start gap-7 caption">
-            <div className="flex-row align-center justify-center ms-5">
+      <HStack
+        w="250px" //"100%"
+        backgroundColor={
+          current?.context?.currentActionTickerId === action.id
+            ? "green"
+            : "#422b6f"
+        }
+        sx={{
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+        boxShadow={"md"}
+        border="1px solid rgba(55,55,55)"
+        borderRadius="5px"
+        onClick={(e) => {
+          // e.stopPropagation();
+          // setClickedAction((state) => (state === action.id ? "" : action.id))
+        }}
+        px={2}
+        py={["Sheet", "Code", "List", "IF", "END", "BREAK"].includes(action.actionType) ? 2 : 1}
+      >
+        <VStack w="100%" gap={0}>
+          <HStack gap={1} alignSelf="flex-start">
+             <Center>
               {InteractionDefinitions.find(
                 (d) => d.name === action.actionType
               )?.svg()}
-            </div>
-            <div className="name">{action.actionType}</div>
+            </Center>
+
+            <Box fontSize={["sm", "md"]} color="white">{action.actionType}</Box>
+
             {"recorded" in action && action.recorded && (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
+                width="12"
+                height="12"
                 fill="red"
                 className="bi bi-record2"
                 viewBox="0 0 16 16"
@@ -136,19 +125,31 @@ function ActionHeader({
                 <path d="M10 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
               </svg>
             )}
-          </div>
-          <HeaderInfo action={action} />
-        </div>
-      </div>
-    );
-  }, [action]);
+          </HStack>
 
-  console.log(
-    "=====rendered===== ACTION HEADER COMPONENT actionType: ",
-    action.actionType
-  );
+          <HeaderInfo action={action} />
+        </VStack>
+
+        <IconButton
+          aria-label="Delete Action"
+          icon={<TiDelete />}
+          onClick={(e) => {
+            e.stopPropagation();
+            dispatch({ type: "DELETE_ACTION", actionId: action.id });
+          }}
+          size="xs"
+          color="rgb(60,60,60)"
+          _hover={{ color: "red" }}
+          variant="ghost"
+          fontSize="1.3rem"
+        />
+      </HStack>
+    );
+  }, [
+    action,
+    dispatch,
+    current?.context?.currentActionTickerId,
+  ]);
 
   return renderActionHeader();
 }
-
-export default ActionHeader;

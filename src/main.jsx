@@ -5,6 +5,7 @@ import "./index.css";
 import { IconContext } from "react-icons";
 import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
 import theme from "./theme";
+// import { GlobalStateProvider } from "./AppState/GlobalState";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -17,7 +18,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           className: "global-class-name",
         }}
       >
+        {/* <GlobalStateProvider> */}
         <App />
+        {/* </GlobalStateProvider> */}
       </IconContext.Provider>
     </ChakraProvider>
   </React.StrictMode>

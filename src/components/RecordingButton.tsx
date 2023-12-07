@@ -1,5 +1,6 @@
 import messageTab from "../utils/messageTab";
-import React from "react";
+import { useCallback, memo } from "react";
+import { Box, Button, HStack, VStack } from "@chakra-ui/react";
 
 type TRecordingButtonParams = { current: any; dispatch: any };
 const RecordingButton = ({ current, dispatch }: TRecordingButtonParams) => {
@@ -7,7 +8,7 @@ const RecordingButton = ({ current, dispatch }: TRecordingButtonParams) => {
 
   console.log("RecordingButton rendered");
 
-  const handleRecord = React.useCallback(
+  const handleRecord = useCallback(
     async (e: any) => {
       console.log("handleRecord(e) called");
       try {
@@ -29,12 +30,11 @@ const RecordingButton = ({ current, dispatch }: TRecordingButtonParams) => {
   );
 
   return (
-    <div className="record-container p-2">
-      <button
+    <Box w="100%">
+      <Button
         onClick={handleRecord}
-        data-status={current.matches("recording") ? "recording" : "stopped"}
-        className="rec-button flex-column align-center"
-        disabled={activeTab?.title ? false : true}
+        isDisabled={activeTab?.title ? false : true}
+        variant="ghost"
       >
         {current.matches("recording") ? (
           <>
@@ -42,7 +42,7 @@ const RecordingButton = ({ current, dispatch }: TRecordingButtonParams) => {
               xmlns="http://www.w3.org/2000/svg"
               width="15"
               height="15"
-              fill="currentColor"
+              fill="red"
               className="bi bi-stop-btn"
               viewBox="0 0 16 16"
             >
@@ -56,7 +56,7 @@ const RecordingButton = ({ current, dispatch }: TRecordingButtonParams) => {
               xmlns="http://www.w3.org/2000/svg"
               width="15"
               height="15"
-              fill="currentColor"
+              fill="gray"
               className="bi bi-record-btn"
               viewBox="0 0 16 16"
             >
@@ -65,9 +65,9 @@ const RecordingButton = ({ current, dispatch }: TRecordingButtonParams) => {
             </svg>
           </>
         )}
-      </button>
-    </div>
+      </Button>
+    </Box>
   );
 };
 
-export default React.memo(RecordingButton);
+export default memo(RecordingButton);

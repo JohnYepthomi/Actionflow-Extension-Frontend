@@ -126,7 +126,8 @@ export default function Editor({
     value: actionProps.value,
     vars: actionProps.vars,
   });
-  const [noPrefixLocalCompletions, setNoPrefixLocalCompletions] = React.useState<{ label: string, type: string }[]>([]);
+  const [noPrefixLocalCompletions, setNoPrefixLocalCompletions] =
+    React.useState<{ label: string; type: string }[]>([]);
 
   function myCompletions(context: any) {
     /*********************************************************************************
@@ -150,19 +151,25 @@ export default function Editor({
       filter code actions from actions.
     *********************************************************************************/
     let discardAction = false;
-    let code_actions = actions && actions.filter((action: any, index: number) => {
-      if (!discardAction) {
-        if (action.id === actionId && 'props' in action && ("vars" in action.props || "variable" in action.props)) {
-          discardAction = true;
+    let code_actions =
+      actions &&
+      actions.filter((action: any, index: number) => {
+        if (!discardAction) {
+          if (
+            action.id === actionId &&
+            "props" in action &&
+            ("vars" in action.props || "variable" in action.props)
+          ) {
+            discardAction = true;
+          }
+
+          return true;
         }
 
-        return true;
-      }
-
-      if (discardAction) {
-        return false;
-      }
-    });
+        if (discardAction) {
+          return false;
+        }
+      });
 
     /**********************************************************************************
       Get the variables from actions that have either 'props.vars' or 'props.variable'
@@ -172,9 +179,19 @@ export default function Editor({
       prefixedCompletions = code_actions.reduce(
         (combined: any, { props }: any, index: any) => {
           if (props && props?.vars)
-            return [...combined, ...props.vars.map((v: any) => { return { label: v, type: "variable" } })] //, apply: v.substring(1) 
+            return [
+              ...combined,
+              ...props.vars.map((v: any) => {
+                return { label: v, type: "variable" };
+              }),
+            ];
+          //, apply: v.substring(1)
           else if (props && props?.variable)
-            return [...combined, { label: '$' + props.variable, type: "variable" }] //, apply: v.substring(1) 
+            return [
+              ...combined,
+              { label: "$" + props.variable, type: "variable" },
+            ];
+          //, apply: v.substring(1)
           else return [...combined];
         },
         []
@@ -186,7 +203,11 @@ export default function Editor({
     /*********************************************************************************
       Add the jskeywords, prefixed and non prefixed Completions
     *********************************************************************************/
-    prefixedCompletions = [...prefixedCompletions, ...(noPrefixLocalCompletions || []), ...javascriptKeywords]
+    prefixedCompletions = [
+      ...prefixedCompletions,
+      ...(noPrefixLocalCompletions || []),
+      ...javascriptKeywords,
+    ];
 
     return {
       from: before ? before.from : context.pos,
@@ -206,7 +227,7 @@ export default function Editor({
     let match;
     while ((match = variableRegex.exec(code_string)) !== null) {
       const variableName = match[1];
-      variables.push({ label: variableName, type: 'variable' });
+      variables.push({ label: variableName, type: "variable" });
     }
 
     return variables;
@@ -214,6 +235,7 @@ export default function Editor({
 
   return (
     <CodeMirror
+      style={{ width: "100%" }}
       theme="dark"
       value={code?.value ?? ""}
       initialState={
@@ -232,35 +254,31 @@ export default function Editor({
         /******************
           filter variables
         *******************/
-        let noPrefixVars: { label: string, type: string }[];
+        let noPrefixVars: { label: string; type: string }[];
         if (prefixedVars && prefixedVars.length > 0) {
-          noPrefixVars = prefixedVars.filter(v => {
+          noPrefixVars = prefixedVars.filter((v) => {
             console.log({ v });
-            if (!v.label.includes("$"))
-              return true;
-            else
-              return false;
+            if (!v.label.includes("$")) return true;
+            else return false;
           });
-          prefixedVars = prefixedVars.filter(v => {
-            if (v.label.includes("$"))
-              return true;
-            else
-              return false;
+          prefixedVars = prefixedVars.filter((v) => {
+            if (v.label.includes("$")) return true;
+            else return false;
           });
         }
 
         /***********************************************************************************************
           'noPrefixVars' is only used for local state, this will not be associated to Code Action Props 
         ***********************************************************************************************/
-        setNoPrefixLocalCompletions(state => noPrefixVars || []);
+        setNoPrefixLocalCompletions((state) => noPrefixVars || []);
 
         /************************************************************************************
          * We only save the prefixed variables to the code state.
          * The code state will be dispatched to be stored in App State's Code Action Props.
-         * 
+         *
          * @NOTE: Prefixed variables will not be available to previous actions, it will only
-         * be available to following actions from the current action. 
-        *************************************************************************************/
+         * be available to following actions from the current action.
+         *************************************************************************************/
         setCode((state) => ({ value, vars: prefixedVars.map((a) => a.label) }));
       }}
     />

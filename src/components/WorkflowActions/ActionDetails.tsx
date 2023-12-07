@@ -3,7 +3,8 @@ import Conditionals from "../Conditionals";
 import TabActions from "../TabActions";
 import { TAction } from "../../Schemas/replaceTypes/Actions";
 import Sheet from "../Sheet";
-import React from 'react';
+import { useCallback } from "react";
+import { Box, VStack } from "@chakra-ui/react";
 
 const INT_ACTIONS = [
   "Click",
@@ -31,7 +32,7 @@ function ActionDetails({
   localActions,
   dispatch,
   current,
-  service
+  service,
 }: {
   action: any;
   localActions: TAction[];
@@ -39,26 +40,49 @@ function ActionDetails({
   current: any;
   service: any;
 }) {
-  console.log("====rendered==== ACTION DETAILS COMPONENT   actionType: ", action.actionType);
+  const renderActionDetails = useCallback(() => {
+    return (
+      <VStack
+        w="100%"
+        backgroundColor="rgba(50,50,50,0.6)"
+        border="1px solid rgba(75,75,75,0.5)"
+        borderTop="none"
+        borderRadius="0px 0px 3px 3px"
+        sx={{
+          padding: 5,
+        }}
+      >
+        {INT_ACTIONS.includes(action.actionType) && (
+          <Interaction
+            action={action}
+            actions={localActions}
+            current={current}
+            dispatch={dispatch}
+          />
+        )}
 
-  const renderActionDetails = React.useCallback(() => {
-      return (
-          <div className="action-details flex-column p-2" data-show-details="false">
-              {INT_ACTIONS.includes(action.actionType) && (<Interaction action={action} actions={localActions} current={current} dispatch={dispatch}/>)}
+        {COND_ACTIONS.includes(action.actionType) && (
+          <Conditionals
+            action={action}
+            current={current}
+            dispatch={dispatch}
+            service={service}
+          />
+        )}
 
-              {COND_ACTIONS.includes(action.actionType) && (<Conditionals action={action} current={current} dispatch={dispatch} service={service}/>)}
+        {TAB_ACTIONS.includes(action.actionType) && (
+          <TabActions action={action} dispatch={dispatch} />
+        )}
 
-              {TAB_ACTIONS.includes(action.actionType) && (<TabActions action={action} dispatch={dispatch}/>)}
-
-              {action.actionType === "Sheet" && <Sheet />}
-          </div>
-      );
-  },[current, action])
+        {action.actionType === "Sheet" && <Sheet />}
+      </VStack>
+    );
+  }, [current, action]);
 
   // Actions that have Details to display
-  if ("props" in action || "conditions" in action || "tabId" in action){
+  if ("props" in action || "conditions" in action || "tabId" in action) {
     return renderActionDetails();
-  }else{
+  } else {
     return <></>;
   }
 }

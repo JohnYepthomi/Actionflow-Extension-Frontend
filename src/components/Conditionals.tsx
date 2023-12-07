@@ -1,13 +1,23 @@
 import { TAppEvents } from "../Schemas/replaceTypes/StateEvents";
 import React from "react";
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   TConditionAction,
   TGeneralCondition,
   TOperatorCondition,
 } from "../Schemas/replaceTypes/Actions";
 import { TAction } from "../Types/ActionTypes/Action";
-import { useSelector } from '@xstate/react';
+import { useSelector } from "@xstate/react";
+import {
+  Center,
+  Button,
+  Input,
+  Select,
+  Box,
+  VStack,
+  HStack,
+  ButtonGroup,
+} from "@chakra-ui/react";
 
 type ConditionParams = {
   action: TConditionAction;
@@ -16,7 +26,12 @@ type ConditionParams = {
   service: any;
 };
 
-export default function Conditionals({ action, current, dispatch, service }: ConditionParams) {
+export default function Conditionals({
+  action,
+  current,
+  dispatch,
+  service,
+}: ConditionParams) {
   const handleOperatorClick = React.useCallback((operator: "AND" | "OR") => {
     const PAYLOAD: TAppEvents = {
       type: "ADD_OPERATOR",
@@ -30,23 +45,38 @@ export default function Conditionals({ action, current, dispatch, service }: Con
 
   return (
     <>
-      <ConditionItems action={action} current={current} dispatch={dispatch} service={service} />
+      <ConditionItems
+        action={action}
+        current={current}
+        dispatch={dispatch}
+        service={service}
+      />
 
       {/* Description */}
-      <div className="flex-row align-center justify-center flex-1 mt">
-        <div className="fs-sm">Description</div>
-        <input className="flex-1" type="text" placeholder="Enter Description" />
-      </div>
+      <VStack alignItems="flex-start" w="100%" mt={2} fontSize="xs">
+        <Box>Description</Box>
+        <Input size={["xs", "sm"]} placeholder="Enter Description" />
+      </VStack>
 
       {/* Operator Buttons */}
-      <div className="flex-row align-center justify-center mt">
-        <button className="flex-1" onClick={() => handleOperatorClick("AND")}>
-          + AND
-        </button>
-        <button className="flex-1" onClick={() => handleOperatorClick("OR")}>
-          + OR
-        </button>
-      </div>
+      <HStack mt={2}>
+        <ButtonGroup size="sm" isAttached variant="outline">
+          <Button
+            w="100%"
+            colorScheme="green"
+            onClick={() => handleOperatorClick("AND")}
+          >
+            AND
+          </Button>
+          <Button
+            w="100%"
+            colorScheme="pink"
+            onClick={() => handleOperatorClick("OR")}
+          >
+            OR
+          </Button>
+        </ButtonGroup>
+      </HStack>
     </>
   );
 }
@@ -58,12 +88,17 @@ type ConitionItemsParams = {
   service: any;
 };
 type TSelectableConditions = TGeneralCondition | TOperatorCondition;
-function ConditionItems({ action, current, dispatch, service }: ConitionItemsParams) {
+function ConditionItems({
+  action,
+  current,
+  dispatch,
+  service,
+}: ConitionItemsParams) {
   return (
     <>
       {action &&
         action["conditions"].map((condition: TSelectableConditions, index) => (
-          <div key={index}>
+          <Box key={index} w="100%">
             {"type" in condition ? (
               <OperatorItem selectedOperator={condition} />
             ) : (
@@ -76,7 +111,7 @@ function ConditionItems({ action, current, dispatch, service }: ConitionItemsPar
                 service={service}
               />
             )}
-          </div>
+          </Box>
         ))}
     </>
   );
@@ -89,14 +124,11 @@ function OperatorItem({ selectedOperator }: TOperatorParams) {
   const bg_clr = selectedOperator.selected === "AND" ? "#368136" : "#a739a7";
   const bg_style = { backgroundColor: bg_clr };
   return (
-    <div className="flex-row align-center justify-center mt-1 mb-1">
-      <div
-        className="operator-view-inner flex-row align-center justify-center"
-        style={bg_style}
-      >
+    <Box>
+      <Center fontSize="0.7rem" sx={bg_style}>
         {selectedOperator.selected}
-      </div>
-    </div>
+      </Center>
+    </Box>
   );
 }
 
@@ -108,7 +140,7 @@ function Condition({
   current,
   actionId,
   dispatch,
-  service
+  service,
 }: {
   condition: TGeneralCondition;
   index: number;
@@ -203,70 +235,78 @@ function Condition({
         actionId,
         selection: {
           selectedVariable: event.target.value,
-        }
+        },
       },
     };
     dispatch(PAYLOAD);
-  }, [])
+  }, []);
 
-  useEffect(()=>{
+  useEffect(() => {
     console.log("current: ", current);
-    if(Array.isArray(current.context.flowActions)){
-      let variables: any = [
+    if (Array.isArray(current.context.flowActions)) {
+      let newVariables: any = [
         ...current.context.flowActions
           .filter((c: TAction) => "props" in c && c?.props?.variable)
           .map((c: TAction) => {
-            if("props" in c && c?.props?.variable){
-              return '$' + c?.props?.variable // adding '$' for now, this should be added form the action component itself
+            if ("props" in c && c?.props?.variable) {
+              return "$" + c?.props?.variable; // adding '$' for now, this should be added form the action component itself
             }
           }),
         ...[].concat(
           ...current.context.flowActions
             .filter((c: TAction) => "props" in c && c?.props?.vars)
             .map((c: TAction) => {
-              if("props" in c && c?.props?.vars){
+              if ("props" in c && c?.props?.vars) {
                 return c?.props?.vars;
               }
             })
-        )
+        ),
       ];
 
-      if(variables){
-        console.log({variables});
-        setVariables(variables);
+      if (newVariables) {
+        console.log({ newVariables });
+        setVariables(newVariables);
       }
     }
-  },[current]);
+  }, [current]);
 
   return (
-    <div key={index} className="condition-container p-2">
-      {
-        condition?.selectedType && ["Basic", "Text", "Number"].includes(condition?.selectedType) &&
-        <select onChange={handleVariableChange} disabled={!variables}>
-          {
-            variables &&
-            variables.map((varb, index) => {
-              return (
-                <option
-                  key={index}
-                  value={varb}
-                  data-selected-option={varb}
-                  // data-requires-check={JSON.stringify(
-                  //   varb.requiresCheck
-                  // )}
-                  selected={varb === condition?.selectedVariable ? true : false}
-                >
-                  {varb}
-                </option>
-            )})
-          }
-        </select>
-      }
+    <VStack key={index} alignItems="flex-start" w="100%" fontSize="xs">
+      {condition?.selectedType &&
+        ["Basic", "Text", "Number"].includes(condition?.selectedType) && (
+          <VStack mt={2} w="100%" alignItems="flex-start">
+            <Box>Vairables</Box>
+            <Select
+              onChange={handleVariableChange}
+              disabled={!variables}
+              size={["xs", "sm"]}
+            >
+              {variables &&
+                variables.map((varb, index) => {
+                  return (
+                    <option
+                      key={index}
+                      value={varb}
+                      data-selected-option={varb}
+                      // data-requires-check={JSON.stringify(
+                      //   varb.requiresCheck
+                      // )}
+                      selected={
+                        varb === condition?.selectedVariable ? true : false
+                      }
+                    >
+                      {varb}
+                    </option>
+                  );
+                })}
+            </Select>
+          </VStack>
+        )}
 
-      <div className="flex-row align-center mt">
-        <div className="fs-sm">{condition.selectedType}</div>
+      <VStack mt={2} w="100%" alignItems="flex-start">
+        <Box>{condition.selectedType}</Box>
 
-        <select onChange={handleConditionOptionChange}>
+        <Select onChange={handleConditionOptionChange} size={["xs", "sm"]}>
           {ConditionsOptionsTemplate &&
             ConditionsOptionsTemplate.map((cond_opts, index) => {
               return (
@@ -280,7 +320,9 @@ function Condition({
                         // data-requires-check={JSON.stringify(
                         //   cond_opts.requiresCheck
                         // )}
-                        selected={option === condition.selectedOption ? true : false}
+                        selected={
+                          option === condition.selectedOption ? true : false
+                        }
                       >
                         {option}
                       </option>
@@ -288,18 +330,18 @@ function Condition({
                 </optgroup>
               );
             })}
-        </select>
-      </div>
+        </Select>
+      </VStack>
 
-      <div className="flex-1 mt">
-        {condition.requiresCheck && (
-          <input
-            className="w-100"
-            type="text"
-            onChange={handleConditionValueChange}
-          />
-        )}
-      </div>
-    </div>
+      {condition.requiresCheck && (
+        <Input
+          className="w-100"
+          placeholder="asd"
+          type="text"
+          onChange={handleConditionValueChange}
+          size={["xs", "sm"]}
+        />
+      )}
+    </VStack>
   );
 }

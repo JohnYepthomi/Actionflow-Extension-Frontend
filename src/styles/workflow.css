@@ -16,31 +16,30 @@
 }
 
 body {
-  font-family: ubuntu;
-  margin: 0;
-  background-color: var(--body-bg-clr);
+  /* font-family: ubuntu; */
+  /* margin: 0; */
+  /* background-color: var(--body-bg-clr); */
 }
 
-.workflow-container {
-  /* position: relative; */
+/* .workflow-container {
   padding: 30px 30px;
   color: white;
-}
+} */
 
-.workflow-label {
+/* .workflow-label {
   font-weight: bold;
   font-size: 1.2rem;
   text-align: center;
   color: white;
   margin-bottom: 20px;
   margin-top: 20px;
-}
+} */
 
-.workflow-ul::-webkit-scrollbar { 
-    display: none;  /* Safari and Chrome 
-/*  width: 5;*/
-}
-.workflow-ul {
+/* .workflow-ul::-webkit-scrollbar { 
+    display: none;
+} */
+
+/* .workflow-ul {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -49,48 +48,47 @@ body {
   width: 400px;
   height: calc(100vh - 60px);
   align-self: center;
-}
+} */
 
-.workflow-ul li {
+/* .workflow-ul li {
   width: 400px;
  background-color: #764d8b63;
   background-color: rgba(150,150,150, 0.15);
   color: white;
   border-radius: 3px;
   --li-left-border-clr: rgb(55, 54, 54);
-}
+} */
 
 /* .workflow-ul li[data-action-type="IF"],
 li[data-action-type="END"] {
   background-color: rgb(203 35 35 / 66%);
 } */
 
-.action-header {
+/* .action-header {
   display: flex;
   align-items: center;
-  /*  justify-content: center;*/
   width: 100%;
   height: 35px;
   padding: 5px 5px 5px 5px;
-  text-align: end; /* was 'center' before */
+  text-align: end;
   color: inherit;
   cursor: pointer;
-}
+} */
 
-.caption {
+/* .caption {
   width: 80px;
   font-weight: bold;
   pointer-events: none;
-}
+} */
 
 /* ACTION HEADER ACTIONTYPE NAME */
-.name {
+/* .name {
   width: 100%; 
   font-size: 0.8rem;
   text-align: left;
 }
-
-.action-details {
+ */
+/* .action-details {
   border: 3px solid #764d8b63;
   border-top: none;
   background-color: rgb(41 37 37);
@@ -102,9 +100,9 @@ li[data-action-type="END"] {
 
 .action-details[data-show-details="false"] {
   display: none;
-}
+} */
 
-button,
+/* button,
 input[type="submit"],
 input[type="reset"] {
   background-color: #453f3f;
@@ -118,9 +116,9 @@ input[type="reset"] {
   cursor: pointer;
   border-radius: 3px;
   outline: inherit;
-}
+} */
 
-input {
+/* input {
   outline: none;
   border: none;
   border-radius: 3px;
@@ -136,4 +134,4 @@ input {
   align-items: center;
   justify-content: center;
   padding: 2px;
-}
+} */

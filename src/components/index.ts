@@ -15,5 +15,5 @@ export {
   Interaction,
   Conditionals,
   Actions,
-  TabActions
+  TabActions,
 };

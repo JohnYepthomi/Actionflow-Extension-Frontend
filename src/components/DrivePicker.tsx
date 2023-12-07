@@ -30,7 +30,7 @@ export default function DrivePicker({
       viewId: "SPREADSHEETS",
       token:
         token ??
-        "ya29.a0AfB_byDCv8hdBnPIMGETKZjekLYiOv4N0e9GnxOGVKMYZ-5eeL_ttCZFMPCb7G0gJU3xysZKn7EAWovx5doIJqeddY7NIJB-fPuzht6hIxT9UADrvzuyLd1b3zoTrae8TmN8Q_HTROTRuSNH0KIYY039WL4b_2HCnccPaCgYKAVsSARESFQHGX2Mi_CgGjx90gIZ5rvV6omCxtQ0171",
+        "ya29.a0AfB_byBkx49zaHMFBpFtfcMS-a9EYEaaN8kNTAuT259L3syWwzDHpP22tx86pdu2mCRAc-jSkY68Mp1X_nnJ6R57OCc_qN7b_O9aqs_KETAKcngXh9PRVomMMU16C89LikBEv8c2fJSbOhWf6_3jVGAXQ-ZRrlHfTlhMaCgYKAScSARESFQHGX2Migm1LZuhcD4jkUw1nSh85xg0171",
       showUploadView: false,
       showUploadFolders: false,
       supportDrives: false,
@@ -58,7 +58,7 @@ export default function DrivePicker({
 
   return (
     <Select
-      placeholder="Select Spreadsheet"
+      placeholder="None"
       onChange={(e) => {
         var selectedValue = e.target.value;
         console.log("Selected option: " + selectedValue);

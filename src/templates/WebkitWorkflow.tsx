@@ -13,37 +13,8 @@ import {
 // Execution Event
 import { listen } from "@tauri-apps/api/event";
 
-// APP STYLES
-import appCss from "../App.css?inline";
-import wfstyle from "../styles/workflow.css?inline";
-import classStyles from "../styles/class-styles.css?inline";
-import activeTabStyle from "../styles/activetab.css?inline";
-import actionMenuStyle from "../styles/actions-menu.css?inline";
-import recordingButtonStyle from "../styles/recordingbutton.css?inline";
-import interactionStyle from "../styles/interactions.css?inline";
-import conditionalsStyle from "../styles/conditionals.css?inline";
-import draganddropStyle from "../styles/draganddrop.css?inline";
-import AddStyle from "../components/AddStyle";
-import AGCommunity from "ag-grid-community/styles/ag-grid.css?inline";
-import AGBalhamDark from "ag-grid-community/styles/ag-theme-balham.min.css?inline";
-import { IconContext } from "react-icons";
 import { logger } from "../../../logger";
-
-import spinnerCss from "../../../spinner.css?inline";
-
-const combinedStyles =
-  AGCommunity +
-  AGBalhamDark +
-  appCss +
-  wfstyle +
-  classStyles +
-  activeTabStyle +
-  actionMenuStyle +
-  recordingButtonStyle +
-  interactionStyle +
-  draganddropStyle +
-  conditionalsStyle +
-  spinnerCss;
+import { VStack, Box } from "@chakra-ui/react";
 
 function debounce(fn: any, ms: number) {
   let timer: undefined | number;
@@ -101,7 +72,7 @@ const Workflow = ({
 
   useEffect(() => {
     send({ type: "UPDATE_WORKFLOW_FROM_TAURI", workflow });
-  }, []);
+  }, [workflow]);
 
   useEffect(() => {
     setDispatchWorkflow((state) => send);
@@ -116,15 +87,6 @@ const Workflow = ({
   }, []);
 
   useEffect(() => {
-    // UPDATE WORKFLOW ON THE APP DATABASE
-    // When user drops an item
-    if (flowActions && flowActions.length > 0) {
-      console.log("flowActons before app dispatch: ", flowActions);
-      updateDebounceRef.current(workflowName, flowActions);
-    }
-  }, [current.context.itemDroppedToggle]);
-
-  useEffect(() => {
     let unlisten_action_ticker;
 
     const action_ticker_listener = async () => {
@@ -134,33 +96,31 @@ const Workflow = ({
         const currentActionId = event.payload;
 
         if (current.context.currentTaskActionId !== currentActionId) {
-          send({ type: "UPDATE_CURRENT_ACTION_TICKER_ID", id: currentActionId });
+          send({
+            type: "UPDATE_CURRENT_ACTION_TICKER_ID",
+            id: currentActionId,
+          });
         }
       });
     };
     action_ticker_listener();
 
-    return () => unlisten_action_ticker();
+    return () => {
+      if (unlisten_action_ticker) unlisten_action_ticker();
+    };
   }, []);
 
   return (
-    <AddStyle style={combinedStyles}>
-      <IconContext.Provider
-        value={{
-          size: "16px",
-          color: "white",
-          className: "global-class-name",
+    <VStack id="ported-component" w="100%" h="100%">
+      <Actions
+        dispatch={send}
+        current={current}
+        updateAppDatabase={(updatedActions) => {
+          updateDebounceRef.current(workflowName, updatedActions);
         }}
-      >
-        <div
-          id="ported-component"
-          className="workflow-container flex-column align-center justify-content gap-1"
-        >
-          <ActionMenu dispatch={send} />
-          <Actions dispatch={send} current={current} />
-        </div>
-      </IconContext.Provider>
-    </AddStyle>
+      />
+      <ActionMenu dispatch={send} />
+    </VStack>
   );
 };
 

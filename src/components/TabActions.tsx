@@ -1,23 +1,25 @@
 import { TTabsAction } from "../Schemas/replaceTypes/Actions";
+import { Box, HStack, VStack, Input } from "@chakra-ui/react";
+import { useState } from "react";
 
 type TabActionParams = {
   action: TTabsAction;
   dispatch: any;
 };
 export default function TabActions({ action, dispatch }: TabActionParams) {
+  const [url, setUrl] = useState(action.props.url);
   return (
-    <div className="flex-column">
-      <div className="fs-md">URL</div>
-      <div className="flex-row align-center">
-        <input
-          id={action.props.url}
-          className="flex-1"
-          type="text"
-          placeholder="url"
-          value={action.props.url}
-        />
-      </div>
-    </div>
+    <VStack alignItems="flex-start" w="100%">
+      <Box className="fs-md">URL</Box>
+      <Input
+        id={action.props.url}
+        placeholder="url"
+        value={url}
+        onChange={(e) => {
+          setUrl();
+        }}
+      />
+    </VStack>
   );
 }
 

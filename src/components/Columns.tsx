@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { VStack, Input, Button, Box } from "@chakra-ui/react";
+import { VStack, Input, Button, Box, IconButton } from "@chakra-ui/react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+import { GoGrabber } from "react-icons/go";
 
 const StrictModeDroppable = ({ children, ...props }) => {
   /**
@@ -84,10 +85,10 @@ const Columns = ({ pairs, setPairs }: any) => {
                       ...(snapshot.isDragging && { cursor: "grabbing" }),
                     })}
                   >
-                    <Box
-                      width="15px"
-                      height="30px"
-                      backgroundColor="blue.500"
+                    <IconButton
+                      icon={<GoGrabber />}
+                      // backgroundColor="blue.500"
+                      size="sm"
                       marginRight="2"
                       {...provided.dragHandleProps}
                     />

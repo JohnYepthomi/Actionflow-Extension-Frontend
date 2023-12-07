@@ -4,6 +4,7 @@ import { useEffect, memo } from "react";
 import { TRecordableActions } from "../Types/ActionTypes/Action";
 import { ActionMenu, ActiveTab, RecordingButton, Actions } from "../components";
 import { TAppEvents } from "../Schemas/replaceTypes/StateEvents";
+import { Center, Box, Button, HStack, VStack } from "@chakra-ui/react";
 
 const test = [
   { id: "anWFdfgd-dl4-kja-s", actionType: "Click", nestingLevel: 0 },
@@ -169,17 +170,16 @@ const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
       });
   }
 
+  console.log("Chrome Workflows rendered");
+
   return (
-    <div
-      id="ported-component"
-      className="workflow-container flex-column align-center justify-content"
-    >
+    <VStack id="ported-component" w="100%" h="100%" px={20}>
       <ActionMenu dispatch={send} />
       <ActiveTab current={current} />
       <RecordingButton current={current} dispatch={send} />
       <Actions dispatch={send} current={current} service={service} />
 
-      <button
+      <Button
         style={{
           backgroundColor: "#472749",
           color: "gray",
@@ -189,8 +189,10 @@ const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
         onClick={handleComposeFinish}
       >
         Done
-      </button>
-    </div>
+      </Button>
+    </VStack>
   );
 };
 export default memo(ChromeWorkflow);
+
+
