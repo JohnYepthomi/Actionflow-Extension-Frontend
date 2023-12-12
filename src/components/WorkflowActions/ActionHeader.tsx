@@ -70,11 +70,13 @@ function HeaderInfo<T extends THeaderInfoActions>({ action }: { action: T }) {
 }
 
 export default function ActionHeader({
+  isDragging,
   action,
   current,
   dispatch,
 }: {
-  action: any;
+  isDragging: boolean;
+  action: TAction;
   current: any;
   dispatch: any;
 }) {
@@ -84,9 +86,11 @@ export default function ActionHeader({
       <HStack
         w="250px" //"100%"
         backgroundColor={
-          current?.context?.currentActionTickerId === action.id
-            ? "green"
-            : "#422b6f"
+          isDragging
+            ? "maroon" 
+            : current?.context?.currentActionTickerId === action.id
+              ? "green"
+              : "#422b6f"
         }
         sx={{
           alignItems: "center",
@@ -104,7 +108,7 @@ export default function ActionHeader({
       >
         <VStack w="100%" gap={0}>
           <HStack gap={1} alignSelf="flex-start">
-             <Center>
+            <Center>
               {InteractionDefinitions.find(
                 (d) => d.name === action.actionType
               )?.svg()}
@@ -146,6 +150,7 @@ export default function ActionHeader({
       </HStack>
     );
   }, [
+    isDragging,
     action,
     dispatch,
     current?.context?.currentActionTickerId,

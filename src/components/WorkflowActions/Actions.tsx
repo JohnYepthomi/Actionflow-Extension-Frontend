@@ -73,9 +73,9 @@ const Actions = ({
     const computed = EvaluateNesting(newPairs);
     setLocalActions(computed);
 
-    if(!updateAppDatabase){
+    if (!updateAppDatabase) {
       setTimeout(() => {
-        dispatch({type: "DRAG_ACTION_UPDATE", payload: computed });
+        dispatch({ type: "DRAG_ACTION_UPDATE", payload: computed });
       }, 500)
     }
 

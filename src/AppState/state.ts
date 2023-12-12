@@ -174,6 +174,30 @@ const TAURI_ACTION_TICKER_EVENTS = {
   },
 };
 
+// const REACT_FLOW_STATE = {
+//   initial: "react-flow-state",
+//   context: {
+//     nodes: null,
+//     edges: null,
+//   },
+//   states: {
+//     edit : {
+//       on: {
+//         ADD_NODE: { actions: assign({ nodes: (context, event) => context.nodes.push(event.node) }) },
+//         DELETE_NODE: { actions: assign({ nodes: (context, event) => context.nodes.filter(n => n.id !== event.id)}) },
+
+//         ON_NODES_CHANGE: { actions: assign({ nodes: (context, event) => applyNodeChanges(event.changes, context.nodes)}) },
+//         ON_EDGESCHANGE: { actions: assign({ edges: (context, event) => applyNodeChanges(event.changes, context.edges)}) },
+//         ON_CONNECT: { actions: assign({ edges: (context, event) => addEdge(event.connection, context.edges)}) },
+//         ON_NODE_DRAG: { actions: assign({}) },
+
+//         ADD_EDGE: { actions: assign({ edges: (context, event) => context.edges.push(event.edge}) },
+//         DELETE_EDGE: { actions: assign({ edges: (context, event) => context.edges.filter(n => n.id !== event.id)}) },
+//       }
+//     }
+//   }
+// }
+
 export const AppStateMachine = createMachine<
   TAppContext,
   TAppEvents,
@@ -231,6 +255,7 @@ export const AppStateMachine = createMachine<
                 c.flowActions.filter((a) => a.id !== e.actionId),
             }),
           },
+
         },
       },
       // dbOperations: { ...DB_SUB_STATE },
@@ -920,7 +945,7 @@ function restoreFlowActions(context: TAppContext, event: any) {
 }
 
 export function EvaluateNesting(actions: TAction[]) {
-  console.log("EvaluateNesting() called. event: ", event);
+  // console.log("EvaluateNesting() called");
 
   const t0 = performance.now();
 
@@ -930,6 +955,9 @@ export function EvaluateNesting(actions: TAction[]) {
   let marginLeft = 0;
 
   const newActions = actions?.map((action) => {
+    if(!action)
+      return;
+
     if (
       prevAction?.actionType === "IF" ||
       prevAction?.actionType === "List" ||
@@ -958,7 +986,7 @@ export function EvaluateNesting(actions: TAction[]) {
   });
 
   const t1 = performance.now();
-  console.log(`Evaluating Nesting took ${t1 - t0} milliseconds.`);
+  // console.log(`Evaluating Nesting took ${t1 - t0} milliseconds.`);
 
   return newActions;
 }

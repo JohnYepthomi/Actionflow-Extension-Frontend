@@ -1,0 +1,33 @@
+@keyframes lindraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fade {
+  0% {
+    opacity: 0;
+  }
+  20%{
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.2;
+  }
+  60%: {
+    opacity: 0.5;
+  }
+  80%: {
+    opacity: 0.8;
+  }
+  100%: {
+    opacity: 1;
+  }
+}
+
+/*path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: draw 4s linear forwards;
+}
+*/
