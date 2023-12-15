@@ -5,12 +5,12 @@ import type { TNodeData } from "./ActionsView";
 import { Handle, Position } from 'reactflow';
 import "./edge.css";
 
-export default function ActionNode({ data }: { data: TNodeData}){
+export default function ActionNode({ data, ...props }: { data: TNodeData}){
   const onChange = useCallback((evt: { target: { value: any } }) => {
     console.log(evt.target.value);
     console.log("ActionNode onChange");
   }, []);
-  const { isDragging, index, hideTopHandle, action, current, dispatch } = data;
+  const { isDragging, isDragSelect, index, hideTopHandle, action, current, dispatch } = data;
   const actionType = action.actionType;
   const sourceStyle = {
     borderColor: "orange",
@@ -38,54 +38,57 @@ export default function ActionNode({ data }: { data: TNodeData}){
       </>
     );
 
+  //rotate: (isDragging || isDragSelect) ? "-5deg" : "0deg" 
+
   return (
     <motion.div layout whileHover={{ scale: 1.3 }}>
 
-      <div style={{ rotate: isDragging ? "-5deg" : "0deg" }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', }}> 
         <ActionHeader
-          isDragging={isDragging}
+          isDragging={isDragging || isDragSelect}
           action={action}
           current={current}
           dispatch={dispatch}
         />
+        
+        {/*<div>Y: {props.yPos}</div>*/}
 
-        {!isDragging && (
-          <>
-            { !hideTopHandle && (
-              <Handle
-                id={action.id}
-                type="target"
-                position={Position.Top}
-                style={{ ...targetStyle }}
-              />
-            )}
+        <Handle
+          id={action.id}
+          type="target"
+          position={Position.Top}
+          style={{ ...targetStyle }}
+        />
 
-            {!isSpecialAction && (
-              <Handle
-                type="source"
-                id={action.id}
-                position={Position.Bottom}
-                style={{ ...sourceStyle }}
-              />
-            )}
-            {isSpecialAction && (
-              <>
-                <Handle
-                  type="source"
-                  id={action.id + actionType}
-                  position={Position.Bottom}
-                  style={{ ...sourceStyle }}
-                />
+        {
+          (!isDragSelect && !isDragging) && 
+            <>
+              {!isSpecialAction && (
                 <Handle
                   type="source"
                   id={action.id}
-                  position={Position.Right}
+                  position={Position.Bottom}
                   style={{ ...sourceStyle }}
                 />
-              </>
-            )}
-          </>
-        )}
+              )}
+              {isSpecialAction && (
+                <>
+                  <Handle
+                    type="source"
+                    id={action.id + actionType}
+                    position={Position.Bottom}
+                    style={{ ...sourceStyle }}
+                  />
+                  <Handle
+                    type="source"
+                    id={action.id}
+                    position={Position.Right}
+                    style={{ ...sourceStyle }}
+                  />
+                </>
+              )}
+            </>
+        }
       </div>
 
     </motion.div>

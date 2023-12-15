@@ -19,6 +19,8 @@ import ReactFlow, {
     useEdgesState,
     useNodesState,
     useOnSelectionChange,
+    ReactFlowProvider,
+    useReactFlow
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { TAction } from "../../Schemas/replaceTypes/Actions";
@@ -35,261 +37,35 @@ const handleStyle = { left: 10 };
 const nodeType = { actionNode: ActionNode };
 const edgeType = { actionEdge: ActionEdge };
 
-// const BrowserActions: any = [
-//     {
-//         "id": "292cc448-34ca-f427-0dd1-c239650f51be",
-//         "recorded": true,
-//         "nestingLevel": 0,
-//         "actionType": "NewTab",
-//         "props": {
-//             "url": "https://github.com/",
-//             "tabId": 1010961446,
-//             "windowId": 1010961395
-//         },
-//         "marginLeft": 0
-//     },
-//     {
-//         "id": "82f112ae-8990-4d26-0e0b-909ab6d4bbcc",
-//         "recorded": true,
-//         "nestingLevel": 0,
-//         "actionType": "Click",
-//         "props": {
-//             "nodeName": "INPUT",
-//             "selector": "input[aria-label=\"Find a repository…\"]",
-//             "Wait For New Page To Load": false,
-//             "Wait For File Download": false,
-//             "Description": "Find a repository…"
-//         },
-//         "marginLeft": 0
-//     },
-//     {
-//         "id": "38bf9285-ef73-0b73-076b-5206b34fe08c",
-//         "actionType": "IF",
-//         "nestingLevel": 0,
-//         "conditions": [
-//             {
-//                 "selectedVariable": "",
-//                 "selectedType": "Element",
-//                 "selectedOption": "IsVisible",
-//                 "requiresCheck": true,
-//                 "checkValue": ""
-//             }
-//         ],
-//         "marginLeft": 0
-//     },
-//     {
-//         "id": "c3e51bd4-cd1f-fd82-2265-e739bdb7e554",
-//         "actionType": "Date",
-//         "recorded": false,
-//         "props": {
-//             "nodeName": "",
-//             "selector": "",
-//             "Date": ""
-//         },
-//         "nestingLevel": 1,
-//         "marginLeft": 20
-//     },
-//     {
-//         "id": "afa5c569-0218-d8ee-0a10-d82e890ee6b1",
-//         "actionType": "Upload",
-//         "recorded": false,
-//         "props": {
-//             "nodeName": "",
-//             "selector": "",
-//             "Path": ""
-//         },
-//         "nestingLevel": 1,
-//         "marginLeft": 20
-//     },
-//     {
-//         "id": "8bce5fa0-5a88-fd18-e807-ec33e96b6a97",
-//         "actionType": "END",
-//         "nestingLevel": 0,
-//         "marginLeft": 0
-//     },
-//     {
-//         "id": "1a97df89-8793-ae90-97bc-fecb98320cba",
-//         "actionType": "Anchor",
-//         "recorded": false,
-//         "props": {
-//             "nodeName": "",
-//             "selector": "",
-//             "variable": "",
-//             "value": ""
-//         },
-//         "nestingLevel": 0,
-//         "marginLeft": 0
-//     },
-//     {
-//         "id": "92a2a860-0b5a-067d-bce6-a8be10c2667b",
-//         "actionType": "Code",
-//         "recorded": false,
-//         "props": {
-//             "nodeName": "",
-//             "selector": "",
-//             "Code": ""
-//         },
-//         "nestingLevel": 0,
-//         "marginLeft": 0
-//     },
-//     {
-//         "id": "7d2357ee-ec41-b06f-94d2-3d27de1851c8",
-//         "actionType": "List",
-//         "recorded": false,
-//         "props": {
-//             "nodeName": "",
-//             "selector": "",
-//             "variable": ""
-//         },
-//         "nestingLevel": 0,
-//         "marginLeft": 0
-//     },
-//     {
-//         "id": "14f6a163-2cd0-eea8-544d-e4522e160b8b",
-//         "actionType": "Date",
-//         "recorded": false,
-//         "props": {
-//             "nodeName": "",
-//             "selector": "",
-//             "Date": ""
-//         },
-//         "nestingLevel": 1,
-//         "marginLeft": 20
-//     },
-//     {
-//         "id": "2498e40c-50d8-b8da-b933-b264adefb4ca",
-//         "actionType": "Prompts",
-//         "recorded": false,
-//         "props": {
-//             "nodeName": "",
-//             "selector": "",
-//             "Response Type": {
-//                 "Accept": false,
-//                 "Decline": false
-//             },
-//             "Response Text": ""
-//         },
-//         "nestingLevel": 1,
-//         "marginLeft": 20
-//     },
-//     {
-//         "id": "53b5bd45-a3f8-21b2-6d0c-8bfad1c48274",
-//         "actionType": "END",
-//         "nestingLevel": 0,
-//         "marginLeft": 0
-//     }
-// ]
-
 const BrowserActions: any = [
     {
-        "id": "6fcfad09-774d-7e60-ec73-4df71570d9e3",
+        "id": "e3902519-f0a5-1cec-75d6-8675d0d44498",
         "recorded": true,
         "nestingLevel": 0,
-        "actionType": "Click",
+        "actionType": "NewTab",
         "props": {
-            "nodeName": "TEXTAREA",
-            "selector": "textarea[aria-label=\"Search\"]",
-            "Wait For New Page To Load": false,
-            "Wait For File Download": false,
-            "Description": "Search"
+            "url": "https://chat.openai.com/c/79afec09-5608-4b68-87d9-b62e7169279b",
+            "tabId": 1010962585,
+            "windowId": 1010962533
         },
         "marginLeft": 0
     },
     {
-        "id": "899966c2-15db-19f4-4953-3226aac864e0",
-        "recorded": true,
-        "nestingLevel": 0,
-        "actionType": "Type",
-        "props": {
-            "nodeName": "TEXTAREA",
-            "selector": "textarea[aria-label=\"Search\"]",
-            "Text": "go to shop",
-            "Overwrite Existing Text": false
-        },
-        "marginLeft": 0
-    },
-    {
-        "id": "b87371ea-d863-0398-f89b-edc0182a233a",
-        "recorded": true,
-        "nestingLevel": 0,
-        "actionType": "Navigate",
-        "props": {
-            "url": "https://github.com/",
-            "tabId": 1010961496,
-            "windowId": 1010961395
-        },
-        "marginLeft": 0
-    },
-    {
-        "id": "8e94110c-6d47-2644-21fa-875aa64936c8",
-        "recorded": true,
-        "nestingLevel": 0,
-        "actionType": "Navigate",
-        "props": {
-            "url": "https://github.com/",
-            "tabId": 1010961496,
-            "windowId": 1010961395
-        },
-        "marginLeft": 0
-    },
-    {
-        "id": "fa22ae91-fdd9-ccad-5e5e-4462f689f594",
+        "id": "48f3027d-48ed-bf28-e024-8feb1d7c621f",
         "recorded": true,
         "nestingLevel": 0,
         "actionType": "Click",
         "props": {
             "nodeName": "DIV",
-            "selector": "div:nth-of-type(2) > div",
+            "selector": "div:nth-of-type(13) > div > div > div:nth-of-type(2) > div:nth-of-type(2) > div > div > div > pre > div > div:nth-of-type(2)",
             "Wait For New Page To Load": false,
             "Wait For File Download": false,
-            "Description": "Home\n\n  \n  \n\n\n        \n          \n\n    \n    \n        \n          \n    \n\n        \n      \n        \n          Issues\n\n  \n  \n\n\n        \n          \n\n    \n    \n        \n          \n    \n\n        \n      \n        \n          Pull requests\n\n  \n  \n\n\n        \n          \n\n    \n    \n        \n          \n    \n\n        \n      \n        \n          Projects\n\n  \n  \n\n\n        \n          \n\n    \n    \n        \n          \n    \n\n        \n      \n        \n          Discussions\n\n  \n  \n\n\n        \n          \n\n    \n    \n        \n          \n    \n\n        \n      \n        \n          Codespaces\n\n  \n  \n\n\n        \n          \n        \n          \n\n    \n    \n        \n          \n    \n\n        \n      \n        \n          Explore\n\n  \n  \n\n\n        \n          \n\n    \n    \n        \n          \n    \n\n        \n      \n        \n          Marketplace"
+            "Description": "const actionsToFlowWithNullItemsUseIndex = (actions: any, startIndex: number = 0) => {\n    // Create an array with null items until the starting index\n    const nullItems = Array(startIndex).fill(null);\n\n    // Concatenate the null items array with the original actions array\n    const actionsWithNullItems = nullItems.concat(actions);\n\n    let indexBeforeNull: number | null = null;\n\n    const nodes: any = actionsWithNullItems.map((a, index) => {\n        // ... (existing code)\n\n        if (!a) {\n            if (index > startIndex && actionsWithNullItems[index - 1]) {\n                indexBeforeNull = index - 1;\n            }\n            return null;\n        }\n\n        if (index > startIndex) {\n            const prevIndex = indexBeforeNull !== null ? indexBeforeNull : index - 1;\n\n            // ... (existing code)\n        }\n\n        // ... (existing code)\n\n        return {\n            type: \"actionNode\",\n            ...node_template(\n                String(index),\n                data,\n                node_x,\n                node_y,\n            )\n        } satisfies Node;\n    });\n\n    // ... (existing code)\n\n    return { nodes: nodes.filter((n: any) => n), edges };\n};\n\n// Example usage:\nconst actionsArray = [\n    // ... (your actions)\n];\n\nconst startIndex = 21;\nconst result = actionsToFlowWithNullItemsUseIndex(actionsArray, startIndex);"
         },
         "marginLeft": 0
     },
     {
-        "id": "33ed307c-0b15-4f3b-4105-28d895d13951",
-        "recorded": true,
-        "nestingLevel": 0,
-        "actionType": "Click",
-        "props": {
-            "nodeName": "svg",
-            "selector": "button[aria-label=\"Close\"]",
-            "Wait For New Page To Load": false,
-            "Wait For File Download": false,
-            "Description": ""
-        },
-        "marginLeft": 0
-    },
-    {
-        "id": "5675b609-5796-7306-c0fe-ab4ac6952287",
-        "recorded": true,
-        "nestingLevel": 0,
-        "actionType": "Click",
-        "props": {
-            "nodeName": "BUTTON",
-            "selector": "button[aria-label=\"Open global navigation menu\"]",
-            "Wait For New Page To Load": false,
-            "Wait For File Download": false,
-            "Description": "Open global navigation menu"
-        },
-        "marginLeft": 0
-    },
-    {
-        "id": "cf7de2ed-9d1d-7831-9b26-8cdedb166135",
-        "recorded": true,
-        "nestingLevel": 0,
-        "actionType": "Click",
-        "props": {
-            "nodeName": "svg",
-            "selector": "button[aria-label=\"Close\"]",
-            "Wait For New Page To Load": false,
-            "Wait For File Download": false,
-            "Description": ""
-        },
-        "marginLeft": 0
-    },
-    {
-        "id": "fb76a14c-fb33-7d58-1de2-de5c28feee10",
+        "id": "d48fd929-b5e6-a87e-00e3-d70161fba931",
         "actionType": "IF",
         "nestingLevel": 0,
         "conditions": [
@@ -304,64 +80,164 @@ const BrowserActions: any = [
         "marginLeft": 0
     },
     {
-        "id": "2e7071d5-a26a-71a6-eea0-11b430a15ff6",
-        "actionType": "Keypress",
+        "id": "8f6e44c5-aeff-e07e-7d51-e3820c49ed54",
+        "actionType": "Date",
         "recorded": false,
         "props": {
             "nodeName": "",
             "selector": "",
-            "Key": "",
-            "Wait For Page To Load": false
+            "Date": ""
         },
         "nestingLevel": 1,
         "marginLeft": 20
     },
     {
-        "id": "b5783e82-8d1c-5c84-cd9d-36a4e16eb009",
-        "actionType": "Hover",
+        "id": "bd12ea63-fb35-3fcd-46d1-d138ab29fe6b",
+        "actionType": "Prompts",
         "recorded": false,
         "props": {
             "nodeName": "",
             "selector": "",
+            "Response Type": {
+                "Accept": false,
+                "Decline": false
+            },
+            "Response Text": ""
+        },
+        "nestingLevel": 1,
+        "marginLeft": 20
+    },
+    {
+        "id": "13219d34-2f77-8682-030b-8da418a60e33",
+        "actionType": "Select",
+        "recorded": false,
+        "props": {
+            "nodeName": "",
+            "selector": "",
+            "Selected": "",
+            "Options": [
+                ""
+            ],
             "Description": ""
         },
         "nestingLevel": 1,
         "marginLeft": 20
     },
     {
-        "id": "64b57e9e-bcd8-260c-f47e-35d11d1c7ba2",
+        "id": "28288281-2f24-f1b5-fcb8-20c45400c661",
+        "actionType": "IF",
+        "nestingLevel": 1,
+        "conditions": [
+            {
+                "selectedVariable": "",
+                "selectedType": "Element",
+                "selectedOption": "IsVisible",
+                "requiresCheck": true,
+                "checkValue": ""
+            }
+        ],
+        "marginLeft": 20
+    },
+    {
+        "id": "7ff8cb06-0a6b-6d80-69bf-38244bbf41da",
+        "actionType": "Prompts",
+        "recorded": false,
+        "props": {
+            "nodeName": "",
+            "selector": "",
+            "Response Type": {
+                "Accept": false,
+                "Decline": false
+            },
+            "Response Text": ""
+        },
+        "nestingLevel": 2,
+        "marginLeft": 40
+    },
+    {
+        "id": "796fcfcc-b718-49db-17a7-825053348150",
+        "actionType": "Click",
+        "recorded": false,
+        "props": {
+            "nodeName": "",
+            "selector": "",
+            "Wait For New Page To Load": false,
+            "Wait For File Download": false,
+            "Description": ""
+        },
+        "nestingLevel": 2,
+        "marginLeft": 40
+    },
+    {
+        "id": "b2bfde95-5324-70be-311c-d66bc070cd38",
+        "actionType": "Date",
+        "recorded": false,
+        "props": {
+            "nodeName": "",
+            "selector": "",
+            "Date": ""
+        },
+        "nestingLevel": 2,
+        "marginLeft": 40
+    },
+    {
+        "id": "12bdd13b-deef-a34e-565a-4b8211a2a971",
+        "actionType": "END",
+        "nestingLevel": 1,
+        "marginLeft": 20
+    },
+    {
+        "id": "0d91e917-7d46-16a9-41f1-1b39b9083b78",
         "actionType": "END",
         "nestingLevel": 0,
         "marginLeft": 0
     },
     {
-        "id": "0e1e1ba0-53a1-7370-27c4-fe76adaf713e",
-        "actionType": "Anchor",
+        "id": "99e638f2-f899-bda7-6f58-9a5a56800717",
+        "actionType": "Date",
         "recorded": false,
         "props": {
             "nodeName": "",
             "selector": "",
-            "variable": "",
-            "value": ""
+            "Date": ""
         },
         "nestingLevel": 0,
         "marginLeft": 0
     },
     {
-        "id": "38d8ab9f-ac20-9744-1766-ea12101e0e4c",
-        "actionType": "URL",
+        "id": "fec141ac-6b92-2585-2971-b1934cecd2ff",
+        "actionType": "Prompts",
         "recorded": false,
         "props": {
             "nodeName": "",
             "selector": "",
-            "variable": "",
-            "value": ""
+            "Response Type": {
+                "Accept": false,
+                "Decline": false
+            },
+            "Response Text": ""
         },
         "nestingLevel": 0,
         "marginLeft": 0
     },
     {
-        "id": "4729bfcb-32c7-18c5-b48d-8001585c63f7",
+        "id": "a75c27e3-a039-17b3-5ec0-07b57b04c3fc",
+        "actionType": "Select",
+        "recorded": false,
+        "props": {
+            "nodeName": "",
+            "selector": "",
+            "Selected": "",
+            "Options": [
+                ""
+            ],
+            "Description": ""
+        },
+        "nestingLevel": 0,
+        "marginLeft": 0
+    },
+    {
+        "id": "812387e7-499f-9a4f-6255-dcd6f821a2c0",
         "actionType": "Upload",
         "recorded": false,
         "props": {
@@ -373,7 +249,7 @@ const BrowserActions: any = [
         "marginLeft": 0
     },
     {
-        "id": "dfc10c60-c6f2-f060-0b5c-625afc598c1f",
+        "id": "98776231-0881-72c0-a836-96253dee4c1d",
         "actionType": "List",
         "recorded": false,
         "props": {
@@ -385,7 +261,7 @@ const BrowserActions: any = [
         "marginLeft": 0
     },
     {
-        "id": "ddd393de-9385-725d-c4e8-90ea00a79f32",
+        "id": "534afae7-2293-235b-d0d2-38256405054a",
         "actionType": "Text",
         "recorded": false,
         "props": {
@@ -398,127 +274,41 @@ const BrowserActions: any = [
         "marginLeft": 20
     },
     {
-        "id": "a117ed0f-ca93-4747-a547-3b6dc86690be",
-        "actionType": "Date",
+        "id": "cf8c84d6-e054-5968-bf7d-beac497baffd",
+        "actionType": "Keypress",
         "recorded": false,
         "props": {
             "nodeName": "",
             "selector": "",
-            "Date": ""
+            "Key": "",
+            "Wait For Page To Load": false
         },
         "nestingLevel": 1,
         "marginLeft": 20
     },
     {
-        "id": "695d99e8-686c-7337-9ee7-fe22542d26a4",
-        "actionType": "Upload",
+        "id": "f3ee1db4-3878-1b5e-ba5b-3d6709f00c07",
+        "actionType": "Hover",
         "recorded": false,
         "props": {
             "nodeName": "",
             "selector": "",
-            "Path": ""
+            "Description": ""
         },
         "nestingLevel": 1,
         "marginLeft": 20
     },
     {
-        "id": "2974b969-e5aa-3f33-91c7-f3a0ddb747c3",
+        "id": "00e6fb01-1768-22c5-51d0-9e1bc55713db",
         "actionType": "END",
         "nestingLevel": 0,
         "marginLeft": 0
-    },
-    {
-        "id": "16faa417-3124-1eba-9776-2f84184562f0",
-        "actionType": "END",
-        "nestingLevel": 0,
-        "marginLeft": 0
-    },
-    {
-        "id": "c6ef91d6-1686-bc1b-a2cb-a09f8a65b1e0",
-        "actionType": "IF",
-        "nestingLevel": 0,
-        "conditions": [
-            {
-                "selectedVariable": "",
-                "selectedType": "Element",
-                "selectedOption": "IsVisible",
-                "requiresCheck": true,
-                "checkValue": ""
-            }
-        ],
-        "marginLeft": 0
-    },
-    {
-        "id": "68df2b3d-0ce0-1beb-3e5e-266707f7009b",
-        "recorded": true,
-        "nestingLevel": 1,
-        "actionType": "Click",
-        "props": {
-            "nodeName": "INPUT",
-            "selector": "input[aria-label=\"Find a repository…\"]",
-            "Wait For New Page To Load": false,
-            "Wait For File Download": false,
-            "Description": "Find a repository…"
-        },
-        "marginLeft": 20
-    },
-    {
-        "id": "cdbe9937-5db2-8d39-621a-7f26dea82561",
-        "recorded": true,
-        "nestingLevel": 1,
-        "actionType": "Type",
-        "props": {
-            "nodeName": "INPUT",
-            "selector": "input[aria-label=\"Find a repository…\"]",
-            "Text": "asd",
-            "Overwrite Existing Text": false
-        },
-        "marginLeft": 20
-    },
-    {
-        "id": "40289be8-e37c-d3aa-1ac7-e096bec2e2b2",
-        "recorded": true,
-        "nestingLevel": 1,
-        "actionType": "Click",
-        "props": {
-            "nodeName": "BUTTON",
-            "selector": "button[aria-label=\"Search or jump to…\"]",
-            "Wait For New Page To Load": false,
-            "Wait For File Download": false,
-            "Description": "Search or jump to…"
-        },
-        "marginLeft": 20
-    },
-    {
-        "id": "42702c19-69d8-e66b-d4a2-83c23dfd514b",
-        "recorded": true,
-        "nestingLevel": 1,
-        "actionType": "Click",
-        "props": {
-            "nodeName": "SPAN",
-            "selector": "li[aria-label=\"srevinsaju, jump to this owner\"] > a > span:nth-of-type(2) > span",
-            "Wait For New Page To Load": false,
-            "Wait For File Download": false,
-            "Description": "srevinsaju"
-        },
-        "marginLeft": 20
-    },
-    {
-        "id": "b7fa3816-9063-6b70-17ed-41bfc87f7d56",
-        "recorded": true,
-        "nestingLevel": 1,
-        "actionType": "Navigate",
-        "props": {
-            "url": "https://github.com/srevinsaju",
-            "tabId": 1010961496,
-            "windowId": 1010961395
-        },
-        "marginLeft": 20
     }
-];
+]
 
 export type TNodeData = {
     isDragging: boolean;
+    isDragSelect: boolean;
     index: number;
     hideTopHandle: boolean;
     action: TAction;
@@ -563,20 +353,19 @@ const edge_template = (
     animated: animated ? animated : false,
 });
 const nextOfEndActionTargetId = (id: string, actions: TAction[]) => {
-    console.log("called nextOfEndActionTargetId");
     let targetActionId: number | null = null;
 
     let ifNestingLevel: number | null = null;
     actions.forEach((curr_action, index) => {
-        if(targetActionId || !curr_action)
+        if (targetActionId || !curr_action)
             return;
 
-        if(curr_action.id === id){
+        if (curr_action.id === id) {
             ifNestingLevel = curr_action.nestingLevel;
             return;
         }
 
-        if(curr_action.actionType === "END" && curr_action.nestingLevel === ifNestingLevel){
+        if (curr_action.actionType === "END" && curr_action.nestingLevel === ifNestingLevel) {
             targetActionId = index;
             return;
         }
@@ -585,11 +374,12 @@ const nextOfEndActionTargetId = (id: string, actions: TAction[]) => {
     return targetActionId;
 };
 
-type TCreatedNodesAndEdges = { nodes: Node[]; edges: Edge[]; } | null ;
-const actionsToFlowWithNullItems = (actions: any) : TCreatedNodesAndEdges => {
-    console.log("called actionsToFlow");
+type TCreatedNodesAndEdges = { nodes: Node[]; edges: Edge[]; } | null;
 
-    if (!Array.isArray(actions) || actions.length === 0){
+const actionsToFlowWithNullItems = (actions: any): TCreatedNodesAndEdges => {
+    let nullCount = 0;
+
+    if (!Array.isArray(actions) || actions.length === 0) {
         console.warn("[warning] fn actionsToFlow: passed bad argument - (actions: TAction[])");
         return null;
     }
@@ -601,8 +391,11 @@ const actionsToFlowWithNullItems = (actions: any) : TCreatedNodesAndEdges => {
     let indexBeforeNull: number | null = null;
 
     const nodes: any = actions.map((a, index) => {
-        if(!a){
-            if(actions[index - 1]){
+        if (!a) {
+            
+            nullCount++;
+
+            if (actions[index - 1]) {
                 indexBeforeNull = index - 1;
             }
             return null;
@@ -610,18 +403,18 @@ const actionsToFlowWithNullItems = (actions: any) : TCreatedNodesAndEdges => {
 
         if (index > 0) {
             const prevIndex = actions[index - 1] ? index - 1 : indexBeforeNull;
-            if(prevIndex !== null){
+            if (prevIndex !== null) {
                 const prevAction = actions[prevIndex];
                 const prevActionType = prevAction.actionType;
                 const edgeId = `e${prevIndex}-${index}`;
 
                 // Adding an extra edge for special actions
-                if (["IF"].includes(prevActionType)) {
+                if (["IF"].includes(prevActionType) && actions[index + 1]?.actionType !== "END") {
                     const redEdgeTargetId = nextOfEndActionTargetId(prevAction.id, actions);
-                    if(redEdgeTargetId !== null){
+                    if (redEdgeTargetId !== null) {
                         edges.push(edge_template(
                             `e${prevIndex}-${redEdgeTargetId}`, //id
-                            {offset: (redEdgeTargetId - prevIndex) * 100 , isRedEdge: true}, //data
+                            { offset: (redEdgeTargetId - prevIndex) * 100, isRedEdge: true }, //data
                             String(prevIndex), //source id
                             String(redEdgeTargetId), //target id
                             actions[prevIndex].id + prevActionType, //sourceHandle id
@@ -636,7 +429,7 @@ const actionsToFlowWithNullItems = (actions: any) : TCreatedNodesAndEdges => {
                 edges.push(
                     edge_template(
                         edgeId, //id
-                        {offset: null, isRedEdge: false}, // data
+                        { offset: null, isRedEdge: false }, // data
                         String(prevIndex), //source id
                         String(index), //target id
                         actions[prevIndex].id, //sourceHandle id
@@ -654,16 +447,19 @@ const actionsToFlowWithNullItems = (actions: any) : TCreatedNodesAndEdges => {
                 ? 0 
                 // : a.actionType === "END" 
                 //     ? a.nestingLevel + 1 * h_dist
-                    : a.nestingLevel * h_dist;
-        const node_y = index * v_dist;
+                : a.nestingLevel * h_dist;
+        const node_y = Math.abs(index * v_dist - (nullCount * 100));
         const data = {
             isDragging: false,
             index,
+            isDragSelect: false,
             action: a,
             current: null,
             hideTopHandle: index === 0 || index === 1 && !actions[index - 1] ? true : false,
             dispatch: null
         };
+
+        // nullCount = 0;
 
         return {
             type: "actionNode",
@@ -693,11 +489,13 @@ const SelectionTest = () => {
     return null;
 };
 
-export default function ActionsView(): JSX.Element | null {
+function ActionsView(): JSX.Element | null {
     const n_e = useMemo(() => actionsToFlowWithNullItems(EvaluateNesting(BrowserActions)), []);
     const [nodes, setNodes, onNodesChange] = useNodesState(n_e ? n_e.nodes : []);
     const [edges, setEdges, onEdgesChange] = useEdgesState(n_e ? n_e.edges : []);
     const draggedNodeRestore = useRef<{ nodes: Node[]; edges: Edge[]; } | null>();
+    const { getIntersectingNodes } = useReactFlow();
+    const intersectedIdRef = useRef<string>();
 
     const onConnect = useCallback(
         (params: any) => 
@@ -708,18 +506,7 @@ export default function ActionsView(): JSX.Element | null {
             }, eds)),
         [setEdges]);
 
-    const onSelectionDragStart = useCallback((event: React.MouseEvent, _nodes: Node[]) => {
-        console.log("[onSelectionDragStart] nodes", nodes);
-
-        const top: Node = _nodes[0];
-        const bottom: Node = _nodes[_nodes.length - 1];
-
-        const incomers = getIncomers(top, nodes, edges);
-        const outgoers = getOutgoers(bottom, nodes, edges);
-
-        if (incomers.length === 0 && outgoers.length === 0)
-            return;
-
+    const onSelectionDragStart = useCallback((event: React.MouseEvent, selectedNodes: Node[]) => {
         if (!draggedNodeRestore.current) {
             draggedNodeRestore.current = {
                 nodes: JSON.parse(JSON.stringify(nodes)),
@@ -727,27 +514,30 @@ export default function ActionsView(): JSX.Element | null {
             }
         }
 
-        const filteredNodes = BrowserActions.map((a: any) => _nodes.some(n => n.data.action.id === a.id) ? null : a);
-        const computedNesting = EvaluateNesting(filteredNodes);
-        const newNodesEdges: TCreatedNodesAndEdges = actionsToFlowWithNullItems(computedNesting);
-        const combinedNodes  = [...(newNodesEdges ? newNodesEdges.nodes : []), ..._nodes];
+        let nonSelectedNodes = nodes.map((node: any) => selectedNodes.some(selectedNode => selectedNode.data.action.id === node.data.action.id) ? null : node);
+        nonSelectedNodes = EvaluateNesting(nonSelectedNodes.map(fln => fln?.data?.action));
+        const newNonSelectedNodesEdges: TCreatedNodesAndEdges = actionsToFlowWithNullItems(nonSelectedNodes);
 
-        const newEdges = [...(newNodesEdges ? newNodesEdges.edges : [])];
-        const newNodes = combinedNodes.map((n, index) => {
-            if (_nodes.some(_n => _n.id === n.id)) {
-                n.data = { ...n.data, isDragging: true }
-            }
+        if(!newNonSelectedNodesEdges)
+            return;
 
-            if (+n.id > +_nodes[_nodes.length - 1].id) {
-                n.position.y = n.position.y - (_nodes.length * 50);
-            }
-
+        const start_y_dist = selectedNodes[0].position.y;
+        const updatedSelectedNodes = selectedNodes.map((n, index) => {
+            const new_y_dist = (index === 0) ? start_y_dist : (start_y_dist + 100);
+            n.position.y = new_y_dist
+            n.positionAbsolute.y = new_y_dist;
+            n.data = { ...n.data, isDragSelect: true };
             return n;
         });
+        setNodes([...newNonSelectedNodesEdges.nodes, ...updatedSelectedNodes]);
 
-        setNodes(newNodes);
-        setEdges(newEdges);
-    }, [])
+        let selectedEdges = edges.filter(e =>
+            selectedNodes.some(n => n.id === e.source)
+                &&
+            selectedNodes.some(n => n.id === e.target)
+        );
+        setEdges([...newNonSelectedNodesEdges.edges, ...selectedEdges]);
+    }, [setNodes, setEdges, nodes, edges]);
 
     const onSelectionDragStop = useCallback((event: React.MouseEvent, _nodes: Node[]) => {
         if (!draggedNodeRestore.current)
@@ -756,16 +546,77 @@ export default function ActionsView(): JSX.Element | null {
         setNodes(draggedNodeRestore.current.nodes);
         setEdges(draggedNodeRestore.current.edges);
         draggedNodeRestore.current = null;
-    },[draggedNodeRestore, setNodes, setEdges])
+    }, [draggedNodeRestore, setNodes, setEdges]);
 
-    const onNodeDragStart = useCallback((event: React.MouseEvent, node: Node) => {
-        console.log("onNodeDragStart");
-        const incomers = getIncomers(node, nodes, edges);
-        const outgoers = getOutgoers(node, nodes, edges);
+    const onSelectionDrag = useCallback((event: React.MouseEvent, _nodes: Node[]) => {
+        const top: Node = _nodes[0];
+        const intersectedNode = nodes.find(n => 
+            n.id !== top.id
+            &&
+            n.position.y <= top.position.y
+            &&
+            n.position.y >= top.position.y - 142
+        );
 
-        if (incomers.length === 0 && outgoers.length === 0)
+        if (!intersectedNode)
             return;
 
+        const intr_node_id = intersectedNode.id;
+        const newEdgeId = `e${intr_node_id}-${top.id}`;
+
+        const filteredEdges = edges.filter(e => e.target !== top.id);
+
+        if (!edges.some(e => e.id === newEdgeId)) {
+            const newEdge: Edge = edge_template(
+                newEdgeId,
+                { offset: null, isRedEdge: false },
+                intr_node_id,
+                String(top.id),
+                intersectedNode.data.action.id,
+                "actionEdge",
+                intr_node_id,
+                { stroke: "#00BFFF", strokeWidth: 2 },
+                true
+            );
+            setEdges([...filteredEdges, newEdge]);
+        }
+    }, [setNodes, setEdges, edges, nodes]);
+
+    const onNodeDrag = useCallback((event: React.MouseEvent, _node: Node, _nodes: Node[]) => {
+        const intersectedNode = nodes.find(n => 
+            n.id !== _node.id
+                &&
+            n.position.y <= _node.position.y
+                &&
+            n.position.y >= _node.position.y - 142
+        );
+
+        if (!intersectedNode)
+            return;
+
+        const intr_node_id = intersectedNode.id;
+        const newEdgeId = `e${intr_node_id}-${_node.id}`;
+
+        const filteredEdges = edges.filter(e => e.target !== _node.id);
+
+        if (!edges.some(e => e.id === newEdgeId)) {
+            const newEdge: Edge = edge_template(
+                newEdgeId,
+                { offset: null, isRedEdge: false },
+                intr_node_id,
+                String(_node.id),
+                intersectedNode.data.action.id,
+                "actionEdge",
+                intr_node_id,
+                { stroke: "#00BFFF", strokeWidth: 2 },
+                true
+            );
+
+            setEdges([...filteredEdges, newEdge]);
+        }
+    }, [setNodes, setEdges, edges, nodes]);
+
+    const onNodeDragStart = useCallback((event: React.MouseEvent, draggedNode: Node) => {
         if (!draggedNodeRestore.current) {
             draggedNodeRestore.current = {
                 nodes: JSON.parse(JSON.stringify(nodes)),
@@ -773,34 +624,23 @@ export default function ActionsView(): JSX.Element | null {
             }
         }
 
-        const computedNesting = EvaluateNesting(
-            BrowserActions.map((a: any) =>
-                a.id === node.data.action.id
-                    ? null
-                    : a
-            )); // change Dragged node to Null
-        const newNodesEdges: TCreatedNodesAndEdges = actionsToFlowWithNullItems(computedNesting);
-        let combNodes  = [...(newNodesEdges ? newNodesEdges.nodes : []), node];
+        let nonSelectedNodes = nodes.map((node: any) => node.data.action.id === draggedNode.data.action.id ? null : node);
+        nonSelectedNodes = EvaluateNesting(nonSelectedNodes.map(fln => fln?.data?.action));
 
-        console.log("combNodes: ", JSON.parse(JSON.stringify(combNodes)));
-        console.log("node: ", JSON.parse(JSON.stringify(node)));
+        const newNodesEdges: TCreatedNodesAndEdges = actionsToFlowWithNullItems(nonSelectedNodes);
+        let combinedNodes = [...(newNodesEdges ? newNodesEdges.nodes : []), draggedNode];
 
-        const newNodes = combNodes.map((n, index) => {
-            if (n.id === node.id) {
-                console.log("found Dragged Node");
-                n.data = { ...n.data, isDragging: true }
-            }
-
-            if (+n.id > +node.id) {
-                n.position.y = n.position.y - 50;
+        combinedNodes = combinedNodes.map((n, index) => {
+            if (n.id === draggedNode.id) {
+                n.data = { ...n.data, isDragging: true, hideTopHandle: false }
             }
 
             return n;
         });
-        const newEdges = [...(newNodesEdges ? newNodesEdges.edges : [])];
+        setNodes(combinedNodes);
 
-        setNodes(newNodes);
-        setEdges(newEdges);
+        const combinedEdges = [...(newNodesEdges ? newNodesEdges.edges : [])];
+        setEdges(combinedEdges);
     }, [draggedNodeRestore, getConnectedEdges, getIncomers, getOutgoers, setEdges, nodes, edges]);
 
     const onNodeDragStop = useCallback((event: React.MouseEvent, node: Node, _nodes: Node[]) => {
@@ -811,10 +651,6 @@ export default function ActionsView(): JSX.Element | null {
         setEdges(draggedNodeRestore.current.edges);
         draggedNodeRestore.current = null;
     }, [draggedNodeRestore, setNodes, setEdges]);
-
-    useEffect(() => {
-        // console.log("useEffect Edges: ", edges);
-    }, [edges])
 
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
@@ -828,28 +664,40 @@ export default function ActionsView(): JSX.Element | null {
                 }}
 
                 onEdgesChange={(changes: EdgeChange[]) => {
-                    // console.log(`%c Edges Changed: ${changes}`);
                     setEdges(applyEdgeChanges(changes, edges));
                 }}
 
                 onNodeDragStart={onNodeDragStart}
+                onNodeDrag={onNodeDrag}
                 onNodeDragStop={onNodeDragStop}
                 onSelectionDragStart={onSelectionDragStart}
+                onSelectionDrag={onSelectionDrag}
                 onSelectionDragStop={onSelectionDragStop}
+                // onSelectionChange={({ nodes, edges } : { nodes: Node[]; edges: Edge[]; }) => console.log("onSelectionChange, Nodes: ", nodes, ", Edges: ", edges)}
 
                 onConnect={onConnect}
                 proOptions={proOptions}
                 nodeTypes={nodeType}
                 edgeTypes={edgeType}
                 // snapToGrid
+                elevateEdgesOnSelect={true}
                 fitView
             >
                 <Controls />
                 {/*<MiniMap />*/}
-                <Panel position="top-left">bottom-left</Panel>
+                <Panel position="bottom-right">bottom-left</Panel>
                 <Background gap={12} size={1} />
+
                 {/*<SelectionTest />*/}
             </ReactFlow>
         </div>
+    );
+}
+
+export default function Main() {
+    return (
+        <ReactFlowProvider>
+            <ActionsView />
+        </ReactFlowProvider>
     );
 }

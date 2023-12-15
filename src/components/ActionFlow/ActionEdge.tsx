@@ -23,7 +23,8 @@ export default function ActionEdge({
   sourcePosition,
   targetPosition,
   style = {},
-  markerStart, 
+  markerStart,
+  animated,
   markerEnd,
 }: EdgeProps) {
   const { offset, isRedEdge} = data;
@@ -56,7 +57,7 @@ export default function ActionEdge({
         path={edgePath}
         // markerStart='arrow'
         // markerEnd={"url(#arrowhead)"}
-        style={red_edge_style_override}
+        style={animated ? style : red_edge_style_override}
       />
       <EdgeLabelRenderer>
         <div
@@ -70,8 +71,8 @@ export default function ActionEdge({
           }}
           className="nodrag nopan"
         >
-          target: {label}
-{/*          <button className="edgebutton" onClick={(event) => onEdgeClick(event, id)}>
+          {/*sourceY: {sourceY}*/}
+          {/*<button className="edgebutton" onClick={(event) => onEdgeClick(event, id)}>
             ×
           </button>*/}
         </div>
