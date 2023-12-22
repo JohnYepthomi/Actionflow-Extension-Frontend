@@ -17,6 +17,7 @@ export default function ActionEdge({
   label,
   data,
   sourceX,
+  target,
   sourceY,
   targetX,
   targetY,
@@ -45,6 +46,19 @@ export default function ActionEdge({
     animation: offset ? `lindraw ${offset * 0.0003}s linear forwards` : "lindraw 2s linear forwards"
   }
 
+  // console.log(
+  //   "label: ", label,
+  //   ", sourcePosition: ", sourcePosition,
+  //   ", sourceX: ", sourceX,
+  //   ", sourceY: ", sourceY
+  // );
+  // console.log(
+  //   "label: ", label,
+  //   ", targetPosition: ", targetPosition,
+  //   ", targetX: ", targetX,
+  //   ", targetY: ", targetY
+  // );
+
   return (
     <>
       {/*<defs style={{}}>
@@ -62,6 +76,7 @@ export default function ActionEdge({
       <EdgeLabelRenderer>
         <div
           style={{
+            color: "orange",
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             fontSize: 12,
@@ -71,7 +86,7 @@ export default function ActionEdge({
           }}
           className="nodrag nopan"
         >
-          {/*sourceY: {sourceY}*/}
+          target: {target}
           {/*<button className="edgebutton" onClick={(event) => onEdgeClick(event, id)}>
             ×
           </button>*/}

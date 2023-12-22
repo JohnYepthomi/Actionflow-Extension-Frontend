@@ -13,8 +13,10 @@ export default function ActionNode({ data, ...props }: { data: TNodeData}){
   const { isDragging, isDragSelect, index, hideTopHandle, action, current, dispatch } = data;
   const actionType = action.actionType;
   const sourceStyle = {
-    borderColor: "orange",
-    backgroundColor: "orange", 
+    // borderColor: "orange",
+    // backgroundColor: "rgb(55,55,55)",
+    width: 13,
+    height: 13,
     animation: "fade 1s 1",
    };
   const targetStyle = {
@@ -51,22 +53,24 @@ export default function ActionNode({ data, ...props }: { data: TNodeData}){
           dispatch={dispatch}
         />
         
-        {/*<div>Y: {props.yPos}</div>*/}
+        {/*<div>index: {index}</div>*/}
 
         <Handle
-          id={action.id}
+          // id={action.id}
+          id="top"
           type="target"
           position={Position.Top}
           style={{ ...targetStyle }}
         />
 
         {
-          (!isDragSelect && !isDragging) && 
+          
             <>
               {!isSpecialAction && (
                 <Handle
                   type="source"
-                  id={action.id}
+                  // id={action.id}
+                  id="bottom"
                   position={Position.Bottom}
                   style={{ ...sourceStyle }}
                 />
@@ -75,13 +79,15 @@ export default function ActionNode({ data, ...props }: { data: TNodeData}){
                 <>
                   <Handle
                     type="source"
-                    id={action.id + actionType}
+                    // id={action.id + actionType}
+                    id="bottom"
                     position={Position.Bottom}
                     style={{ ...sourceStyle }}
                   />
                   <Handle
                     type="source"
-                    id={action.id}
+                    // id={action.id}
+                    id="right"
                     position={Position.Right}
                     style={{ ...sourceStyle }}
                   />
