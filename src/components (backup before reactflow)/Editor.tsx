@@ -216,8 +216,6 @@ export default function Editor({
     };
   }
 
-  console.log("code: ", code);
-
   React.useEffect(() => {
     codeDispatchRef.current(dispatch, code, actionId);
   }, [code]);

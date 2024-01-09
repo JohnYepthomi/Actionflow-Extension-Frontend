@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { Box, VStack, HStack, Select, Button } from "@chakra-ui/react";
 import Columns from "./Columns";
 import DrivePicker from "./DrivePicker";
@@ -175,33 +175,30 @@ function SelectGoogleAccount({ setSelectedAccount }: any) {
       });
   }, []);
 
-  useEffect(() => {
-    try {
-      chrome.runtime.onMessage.addListener(async function (
-        message: TChromeRuntimeTokenMsg
-      ) {
-        if (message.tokenInfo) {
-          message.tokenInfo?.map((info) => {
-            setGoogleAccounts((state) => [
-              ...state.filter((s) => s.email !== info.email),
-              {
-                email: info.email,
-                accessToken: info.accessToken,
-              },
-            ]);
-          });
-        }
-      });
-    } catch (err) {
-      console.warn("Not running in Extension Context");
-    }
-  },[])
+  try {
+    chrome.runtime.onMessage.addListener(async function (
+      message: TChromeRuntimeTokenMsg
+    ) {
+      if (message.tokenInfo) {
+        message.tokenInfo?.map((info) => {
+          setGoogleAccounts((state) => [
+            ...state.filter((s) => s.email !== info.email),
+            {
+              email: info.email,
+              accessToken: info.accessToken,
+            },
+          ]);
+        });
+      }
+    });
+  } catch (err) {
+    console.warn("Not running in Extension Context");
+  }
 
   return (
     <VStack w="100%">
       <HStack w="100%">
         <Select
-          size="xs"
           placeholder="None"
           onChange={(e) => {
             var selectedValue = e.target.value;
@@ -250,7 +247,7 @@ export default function Sheet() {
   // const group = getRootProps();
 
   return (
-    <VStack w="250px" fontSize="0.9rem0">
+    <VStack w="100%" fontSize="0.9rem">
       {/* <VStack alignItems="center" px={4} py={2}>
         <Box>What would you like to do with the sheet ?</Box>
         <HStack {...group}>
@@ -267,12 +264,12 @@ export default function Sheet() {
 
       <VStack gap={5} alignItems="flex-start" w="100%">
         <VStack alignItems="flex-start" w="100%">
-          <Box color="orange">Google Account</Box>
+          <Box>Google Account</Box>
           <SelectGoogleAccount setSelectedAccount={setSelectedAccount} />
         </VStack>
 
         <VStack alignItems="flex-start" w="100%">
-          <Box color="orange">Spreadsheet</Box>
+          <Box>Spreadsheet</Box>
 
           <HStack w="100%">
             <DrivePicker
@@ -282,7 +279,6 @@ export default function Sheet() {
             />
 
             <Button
-              size="xs"
               colorScheme="twitter"
               onClick={() => window.open(pickedSheet.url, "_blank")}
               isDisabled={!pickedSheet}
@@ -294,7 +290,7 @@ export default function Sheet() {
       </VStack>
 
       <VStack alignItems="flex-start" mt={10}>
-        <Box color="orange">Columns</Box>
+        <Box>Columns</Box>
         <Columns pairs={pairs} setPairs={setPairs} />
       </VStack>
     </VStack>

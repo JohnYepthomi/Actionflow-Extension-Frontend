@@ -35,8 +35,6 @@ function debounce(fn: any, ms: any) {
   };
 }
 
-const optionsStyle= {color: 'orange' }
-
 const DEBOUNCE_DELAY = 300;
 
 type TDispatchRef<T> = (
@@ -113,29 +111,15 @@ function Common({ action, dispatch }: { action: TIntAction; dispatch: any }) {
   );
 
   return (
-    <VStack
-      alignItems="flex-start"
-      w="100%"
-      border="1px solid rgb(75,75,75)"
-      p={2}
-      borderRadius={3}
-    >
-      <Box color="orange">Selector</Box>
+    <VStack alignItems="flex-start" w="100%">
+      <Box>Selector</Box>
       <HStack w="100%">
         <Input
-          size="xs"
-          color="gray"
-          fontSize="inherit"
           placeholder="Css Selector"
           value={selector}
           onChange={handleSelectorChange}
         />
-        <Button
-          size="xs"
-          fontSize="inherit"
-          color="skyblue"
-          onClick={() => handlePickElement(action)}
-        >Pick</Button>
+        <Button onClick={() => handlePickElement(action)}>Pick</Button>
       </HStack>
     </VStack>
   );
@@ -146,7 +130,7 @@ function Scroll({ action, dispatch }: { action: any; dispatch: any }) {
     <VStack alignItems="flex-start" w="100%">
       <VStack w="100%" alignItems="flex-start" mt={2}>
         <Box>Scroll Direction</Box>
-        <TSelect size="xs">
+        <TSelect>
           <option>Scroll Top</option>
           <option>Scroll Bottom</option>
         </TSelect>
@@ -154,7 +138,7 @@ function Scroll({ action, dispatch }: { action: any; dispatch: any }) {
 
       <VStack alignItems="flex-start" w="100%" mt={2}>
         <Box>Description</Box>
-        <Input size="xs" placeholder="Enter description" />
+        <Input placeholder="Enter description" />
       </VStack>
     </VStack>
   );
@@ -201,7 +185,7 @@ function Click({ action, dispatch }: TClickParams) {
             );
           }}
         />
-        <Box sx={optionsStyle}>Wait for New Page to Load </Box>
+        <Box>Wait for New Page to Load </Box>
       </HStack>
 
       <HStack>
@@ -216,15 +200,12 @@ function Click({ action, dispatch }: TClickParams) {
             );
           }}
         />
-        <Box sx={optionsStyle}>Wait For File Download </Box>
+        <Box>Wait For File Download </Box>
       </HStack>
 
       <VStack alignItems="flex-start" w="100%" mt={2}>
-        <Box sx={optionsStyle}>Description (optional)</Box>
+        <Box>Description (optional)</Box>
         <Input
-          size="sm"
-          color="gray"
-          fontSize="inherit"
           placeholder="Enter description"
           value={description}
           onChange={(e: any) => {
@@ -271,7 +252,6 @@ function Type({ action, dispatch }: TTypeParams) {
       <VStack alignItems="flex-start" w="100%">
         <Box fontSize="0.75rem">Text</Box>
         <Input
-          size="xs"
           type="text"
           placeholder="Type Text"
           value={text}
@@ -287,7 +267,6 @@ function Type({ action, dispatch }: TTypeParams) {
       </VStack>
       <HStack w="100%">
         <Checkbox
-          size="sm"
           onChange={(e: any) => {
             setOverwriteText(e.target.checked);
             dbounceRef.current(
@@ -324,9 +303,8 @@ function Hover({ action, dispatch }: THoverParams) {
 
   return (
     <VStack alignItems="flex-start" w="100%" mt={2}>
-      <Box color="orange">Description (Optional)</Box>
+      <Box>Description (Optional)</Box>
       <Input
-        size="xs"
         placeholder="Enter description"
         value={action.props["Description"]}
         onChange={(e: any) =>
@@ -480,8 +458,8 @@ function Select({ action, dispatch }: TSelectParams) {
 function Date({ action, dispatch }: { action: any; dispatch: any }) {
   return (
     <VStack alignItems="flex-start" w="100%" mt={2}>
-      <Box color="orange">Date</Box>
-      <Input size="xs" type="text" placeholder="Select Date" />
+      <Box className="fs-md">Date</Box>
+      <Input type="text" placeholder="Select Date" />
     </VStack>
   );
 }
@@ -490,16 +468,16 @@ function Prompts({ action, dispatch }: { action: any; dispatch: any }) {
   return (
     <VStack alignItems="flex-start" w="100%">
       <VStack alignItems="flex-start" w="100%">
-        <Box color="orange">Response Type</Box>
-        <TSelect size="xs">
+        <Box>Response Type</Box>
+        <TSelect>
           <option>Accept</option>
           <option>Decline</option>
         </TSelect>
       </VStack>
 
       <VStack alignItems="flex-start" w="100%" mt={2}>
-        <Box color="orange">Response Text (Optional)</Box>
-        <Input size="xs" type="text" placeholder="Enter Response Text" />
+        <Box>Response Text (Optional)</Box>
+        <Input type="text" placeholder="Enter Response Text" />
       </VStack>
     </VStack>
   );
@@ -625,9 +603,8 @@ function Attribute({ action, dispatch }: TAttributeParams) {
   return (
     <VStack w="100%">
       <VStack alignItems="flex-start" mt={2} w="100%">
-        <Box color="orange">Attribute</Box>
+        <Box>Attribute</Box>
         <Input
-          size="xs"
           value={attribute}
           onChange={(e: any) => {
             setAttribute(e.target.value);
@@ -642,11 +619,10 @@ function Attribute({ action, dispatch }: TAttributeParams) {
       </VStack>
 
       <VStack alignItems="flex-start" mt={2} w="100%">
-        <Box color="orange">Variable</Box>
+        <Box>Variable</Box>
         <HStack w="100%">
-          <Box color="lightgreen">$</Box>
+          <Box>$</Box>
           <Input
-            size="xs"
             value={variable}
             onChange={(e: any) => {
               setVariable(e.target.value);
@@ -693,21 +669,22 @@ function Anchor({ action, dispatch }: TAnchorParams) {
   );
 
   return (
-    <VStack alignItems="flex-start" gap={1} w="100%" p={1}>
-      <Box color="orange">Variable</Box>
-      <HStack w="100%">
-        <Box className="dollar-prefix">$</Box>
-        <Input
-          w="100%"
-          size="xs"
-          value={action.props.variable}
-          onChange={handleAnchorChange}
-          type="text"
-          data-variable="true"
-          placeholder="variable name"
-        />
-      </HStack>
-    </VStack>
+    <>
+      <div className="flex-column mt txt-clr fs-md">
+        <div className="fs-md">Variable</div>
+        <div className="flex-row mt txt-clr fs-md">
+          <div className="dollar-prefix">$</div>
+          <input
+            className="w-100"
+            value={action.props.variable}
+            onChange={handleAnchorChange}
+            type="text"
+            data-variable="true"
+            placeholder="variable name. Refer to this variable using '$ + variable_name'"
+          />
+        </div>
+      </div>
+    </>
   );
 }
 

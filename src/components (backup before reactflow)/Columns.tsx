@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { VStack, Input, Button, Box, IconButton } from "@chakra-ui/react";
-import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { GoGrabber } from "react-icons/go";
 
 const StrictModeDroppable = ({ children, ...props }) => {
@@ -88,12 +88,11 @@ const Columns = ({ pairs, setPairs }: any) => {
                     <IconButton
                       icon={<GoGrabber />}
                       // backgroundColor="blue.500"
-                      size="xs"
+                      size="sm"
                       marginRight="2"
                       {...provided.dragHandleProps}
                     />
                     <Input
-                      size="xs"
                       placeholder="Label"
                       value={pair.label}
                       onChange={(e) =>
@@ -101,7 +100,6 @@ const Columns = ({ pairs, setPairs }: any) => {
                       }
                     />
                     <Input
-                      size="xs"
                       placeholder="Value"
                       value={pair.value}
                       onChange={(e) =>
@@ -113,7 +111,7 @@ const Columns = ({ pairs, setPairs }: any) => {
               </Draggable>
             ))}
             {provided.placeholder}
-            <Button size="sm" color="skyblue" onClick={handleAddPair} w="fit-content" fontSize="sm">
+            <Button onClick={handleAddPair} w="fit-content" fontSize="sm">
               Add Column
             </Button>
           </VStack>

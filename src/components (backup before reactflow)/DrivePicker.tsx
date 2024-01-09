@@ -14,8 +14,7 @@ export default function DrivePicker({
    * Creating a new access_token on the client side requires a clientId, an API key and all the required scopes.
    *
    * If you have an access_token, you only need an API key and you do not need to specify the client Id and customScopes.
-   * Readacted: [-All-required-Scopes-have-already-been-assigned-to-an-access_token-when-the-token-was-created.]
-   * I may be wrong about the scopes being set on token creation.
+   * All required Scopes have already been assigned to an access_token when the token was created.
    */
 
   useEffect(() => {
@@ -59,7 +58,6 @@ export default function DrivePicker({
 
   return (
     <Select
-      size="xs"
       placeholder="None"
       onChange={(e) => {
         var selectedValue = e.target.value;

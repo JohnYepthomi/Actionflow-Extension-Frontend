@@ -34,13 +34,15 @@ import {
 } from "../Schemas/InteractionsSchema";
 import { TabActionTypesSchema, TabsActionSchema } from "../Schemas/TabsSchema";
 import { ActionCategorySchema } from "../Schemas/ActionsSchema";
+import { actionsToFlowWithNullItems } from "../components/ActionFlow/ActionsView";
+import Debounce from "../utils/Debounce";
 
 const commonEvents = {
   CREATE_ACTION: {
-    actions: ["newAction", "resolveNesting"],
+    actions: ["newAction"], //"resolveNesting"
   },
   DRAG_ACTION_UPDATE: {
-    actions: assign({flowActions: (c, e) => e.payload}),
+    actions: assign({ flowActions: (c, e) => e.payload }),
   },
   ADD_OPERATOR: {
     actions: ["newOperator"],
@@ -54,112 +56,144 @@ const commonEvents = {
   UPDATE_ACTIVE_TAB: {
     actions: ["activeTab"],
   },
-  DRAG_EVENT: {
-    actions: ["resolveNesting"], // "toggleOnDrop",
-  },
+  // DRAG_EVENT: {
+  //   actions: ["resolveNesting"],
+  // },
 };
 
-async function getActionsFromStore(workflowname: string, db: any) {
-  console.log("DB:", db, "workflowName: ", workflowname);
-  try {
-    const rows = await db.select("SELECT data FROM workflows WHERE name = ?", [
-      workflowname,
-    ]);
-    console.log("DB rows data: ", rows, ", for Workflow: ", workflowname);
-    if (rows && rows.length > 0) return JSON.parse(rows[0].data);
-    else return [];
-  } catch (error) {
-    console.error(error);
-    return [];
+const updateActionFromNodesToAppDB = (context, actions) => {
+  if(!context.updateAppDatabase){
+    console.warn("context.updateAppDatabase is undefined. Actions won't be updated to App Database");
+  }else{
+    console.log("Storing Newly created/Updated Action to App Database");
+    context.updateAppDatabase(actions);
   }
 }
 
-// SQLITE OPERATIONS
-const DB_SUB_STATE = {
-  id: "DbState",
-  states: {
-    createWorkflow: {
-      invoke: {
-        id: "invoke-createWorkflow",
-        src: (c: TAppContext, e: any) => {
-          return new Promise(async (resolve, reject) => {
-            try {
-              const create_response = await e.db.execute(
-                `CREATE TABLE IF NOT EXISTS workflows (name TEXT, data TEXT)`
-              );
-              console.log("create_response", create_response);
-              resolve(create_response);
-            } catch (error: any) {
-              console.log("create_table error: ", error);
-              if (error.includes("already exists")) {
-                resolve("");
-              } else reject(error);
-            }
-          });
-        },
-        onDone: "#Actionflow.idle",
-        onError: "#Actionflow.error",
-      },
-    },
-    saveWorkflow: {
-      invoke: {
-        id: "invoke-saveWorkflow",
-        src: (context: TAppContext, event: any) => {
-          return new Promise(async (resolve, reject) => {
-            try {
-              console.log(
-                `DELETING '${event.workflowName}' ROWS FROM 'WORKFLOW' TABLE IN DB...`
-              );
-              const QUERY = `DELETE FROM workflows WHERE name = '${event.workflowName}'`;
-              await event.db.execute(QUERY);
+const debouncedFitView = Debounce(( nodes, fitView ) => {
 
-              console.log("INSERTING WORKFLOW UPDATE TO DB...");
-              if (event.Workflow.length > 0)
-                await event.db.execute(
-                  `INSERT INTO workflows VALUES (?1, ?2)`,
-                  [event.workflowName, JSON.stringify(event.Workflow)]
-                );
-              resolve(event.Workflow);
-            } catch (error) {
-              console.error(error);
-              reject(error);
-            }
-          });
-        },
-        onDone: {
-          target: "#Actionflow.idle",
-          // actions: assign({ flowActions: (c, e) => e.data }),
-        },
-        onError: "#Actionflow.idle",
+  if(nodes.length){
+    console.log("debouncing fitView");
+    
+    fitView({
+      duration: 700,
+      nodes: [nodes[nodes.length - 1]],
+      minZoom: 0.4,
+      maxZoom: 0.7
+    });
+  }
+}, 100);
+
+//Intercepts actions being created and creates new flow nodes
+const reactFlowCreateInterceptor = (context, newAction) => {
+  console.log("reactFlowUpdater, flowInstance:  ", context.flowInstance);
+
+  if (!context.flowInstance) return;
+
+  const { getNodes, setNodes, setEdges, fitView } = context.flowInstance;
+  const nodes = getNodes();
+  const lastNodeIndex = nodes.length - 1;
+  const prevNode = nodes[lastNodeIndex];
+
+  if (!prevNode) {
+    const newNode = {
+      id: String(0),
+      type: "actionNode",
+      data: {
+        isDragging: false,
+        index: 0,
+        isFocused: false,
+        isDragSelect: false,
+        action: newAction,
+        current: null,
+        hideTopHandle: true,
+        dispatch: null,
       },
-    },
-    getWorkflow: {
-      invoke: {
-        id: "invoke-getWorkflow",
-        src: (context: TAppContext, event: any) => {
-          console.log("invoke-selectDb");
-          return getActionsFromStore(event.workflowName, event.db);
-        },
-        onDone: {
-          target: "#Actionflow.idle",
-          actions: assign({ flowActions: (c: TAppContext, e: any) => e.data }),
-        },
-        onError: "#Actionflow.error",
+      position: {
+        x: 0 * 200,
+        y: 0 * 100,
       },
+    };
+
+    debouncedFitView(nodes, fitView );
+    updateActionFromNodesToAppDB(context, [...nodes.map(n => n.data.action), newAction]);
+    setNodes((nds) => [...nds, newNode]);
+
+    return;
+  }
+
+  const newNodeId = lastNodeIndex + 1;
+  const prevNodeId = Number(prevNode.id);
+  const prevActionType = prevNode.data.action.actionType;
+  const combined = [...nodes.map((n) => n.data.action), newAction];
+  const newLevel = EvaluateNesting(combined)[combined.length - 1].nestingLevel;
+
+  const newNode = {
+    id: `${newNodeId}`,
+    type: "actionNode",
+    data: {
+      isDragging: false,
+      index: newNodeId,
+      isFocused: false,
+      isDragSelect: false,
+      action: newAction,
+      current: null,
+      hideTopHandle: newNodeId === 0 ? true : false,
+      dispatch: null,
     },
-    clearWorkflow: {
-      invoke: {
-        id: "invoke-clearWorkflow",
-        src: (c: TAppContext, e: any) => {
-          console.log(`CLEARING '${e.workflowName}' from 'WORKFLOW' TABLE`);
-          const QUERY = `DELETE FROM workflows WHERE name = '${e.workflowName}'`;
-          return e.db.execute(QUERY);
-        },
-        onDone: "#DbState.getWorkflow",
-        onError: "#Actionflow.error",
-      },
+    position: {
+      x: newLevel * 200,
+      y: newNodeId * 100,
     },
-  },
+  };
+  const newEdge = {
+    id: `e${prevNodeId}-${newNodeId}`,
+    source: String(prevNodeId),
+    target: String(newNodeId),
+    sourceHandle: newNode.data.action.actionType === "IF" ? "right" : "bottom",
+    type: "actionEdge",
+    data: { offset: null, isRedEdge: false },
+    label: "",
+    animated: false,
+    style: { stroke: "rgb(70,70,70)" },
+  };
+
+  updateActionFromNodesToAppDB(context, [...nodes.map(n => n.data.action), newAction]);
+  
+  debouncedFitView(nodes, fitView);
+  setNodes((nds) => [...nds, newNode]);
+  setEdges((eds) => [...eds, newEdge]);
+};
+//Intercepts actions being updated and updates flow nodes
+const reactFlowUpdateInterceptor = (context, updatedAction) => {
+  if (!context.flowInstance)
+    return;
+
+  console.log("reactFlowUpdateInterceptor: ", reactFlowUpdateInterceptor);
+  
+
+  const { setNodes, getNodes, fitView } = context.flowInstance;
+  const nodes = getNodes();
+
+  updateActionFromNodesToAppDB(context, [...nodes(n => {
+    if(n.data.action.id === updatedAction.id){
+      n.data.action = updatedAction;
+    }
+
+    return n.data.action;
+  })]);
+
+  setNodes((nds) => {
+    nds = nds.map((n) => {
+      if (n.data.action.id === updatedAction.id) {
+        n = { ...n, data: { ...n.data, action: updatedAction } };
+      }
+
+      return n;
+    });
+
+    return nds;
+  });
 };
 
 // TAURI ACTION TICKER EVENT STATE
@@ -173,30 +207,6 @@ const TAURI_ACTION_TICKER_EVENTS = {
     actions: assign({ currentActionTickerId: null }),
   },
 };
-
-// const REACT_FLOW_STATE = {
-//   initial: "react-flow-state",
-//   context: {
-//     nodes: null,
-//     edges: null,
-//   },
-//   states: {
-//     edit : {
-//       on: {
-//         ADD_NODE: { actions: assign({ nodes: (context, event) => context.nodes.push(event.node) }) },
-//         DELETE_NODE: { actions: assign({ nodes: (context, event) => context.nodes.filter(n => n.id !== event.id)}) },
-
-//         ON_NODES_CHANGE: { actions: assign({ nodes: (context, event) => applyNodeChanges(event.changes, context.nodes)}) },
-//         ON_EDGESCHANGE: { actions: assign({ edges: (context, event) => applyNodeChanges(event.changes, context.edges)}) },
-//         ON_CONNECT: { actions: assign({ edges: (context, event) => addEdge(event.connection, context.edges)}) },
-//         ON_NODE_DRAG: { actions: assign({}) },
-
-//         ADD_EDGE: { actions: assign({ edges: (context, event) => context.edges.push(event.edge}) },
-//         DELETE_EDGE: { actions: assign({ edges: (context, event) => context.edges.filter(n => n.id !== event.id)}) },
-//       }
-//     }
-//   }
-// }
 
 export const AppStateMachine = createMachine<
   TAppContext,
@@ -212,33 +222,16 @@ export const AppStateMachine = createMachine<
       activeTab: undefined,
       currentActionTickerId: undefined,
       itemDroppedToggle: false,
+      flowInstance: undefined,
+      updateAppDatabase: undefined,
     },
     states: {
-      // restoring: {
-      //   on: {
-      //     READ_WORKFLOW: {
-      //       target: "#DbState.getWorkflow",
-      //     },
-      //   },
-      // },
       idle: {
         on: {
           ...commonEvents,
           START_RECORD: {
             target: "#Actionflow.recording",
           },
-          // CREATE_WORKFLOW: {
-          //   target: "#DbState.createWorkflow",
-          // },
-          // READ_WORKFLOW: {
-          //   target: "#DbState.getWorkflow",
-          // },
-          // UPDATE_WORKFLOW: {
-          //   target: "#DbState.saveWorkflow",
-          // },
-          // DELETE_WORKFLOW: {
-          //   target: "#DbState.clearWorkflow",
-          // },
           UPDATE_INTERACTION: {
             target: "#Actionflow.idle",
             actions: ["updateInteraction"],
@@ -255,15 +248,35 @@ export const AppStateMachine = createMachine<
                 c.flowActions.filter((a) => a.id !== e.actionId),
             }),
           },
-
+          FLOWINSTANCE: {
+            actions: [
+                assign({
+                  flowInstance: (c, e) => {
+                  console.log("FLOWINSTANCE , e: ", e);
+                  return e.reactFlowInstance;
+                  },
+                }),
+                assign({
+                  flowActions: (c, e) => {
+                  console.log("FLOWINSTANCE , e: ", e);
+                  return e.reactFlowInstance?.getNodes()?.map(n => n?.data?.action);
+                  },
+                }),
+              ]
+          },
+          TAURI_APP_DB: {
+            actions: 
+              assign({updateAppDatabase: (c, e) => {
+                return e.updateAppDatabase;
+              }}),
+          }
         },
       },
-      // dbOperations: { ...DB_SUB_STATE },
       recording: {
         on: {
           ...commonEvents,
           RECORDED_ACTION: {
-            actions: ["recordedAction", "resolveNesting"],
+            actions: ["recordedAction"], // , "resolveNesting"
           },
           STOP_RECORD: {
             target: "#Actionflow.idle",
@@ -330,7 +343,10 @@ export const AppStateMachine = createMachine<
         },
       }),
       updateTauriWorkflow: assign({
-        flowActions: (c: TAppContext, e: TAppEvents) => e.workflow,
+        flowActions: (c: TAppContext, e: TAppEvents) => {
+          console.log("updateTauriWorkflow: ", e.workflow);
+          return e.workflow;
+        },
       }),
       toggleOnDrop: assign({
         itemDroppedToggle: (c: any, e: any) => !c.itemDroppedToggle,
@@ -343,7 +359,7 @@ function updateInteractionAction(
   context: TAppContext,
   event: TAppEvents
 ): TAction[] {
-  console.log("in updateInteractionAction state action handler");
+  console.log("in updateInteractionAction state action handler, context.flowActions: ", context.flowActions);
 
   const parsedIntAction = UpdateInteractionActionEventSchema.safeParse(event);
   if (!parsedIntAction.success) {
@@ -354,7 +370,7 @@ function updateInteractionAction(
   const actionId = parsedIntAction.data.payload.actionId;
   const interactionType = context.flowActions.filter(
     (a) => a.id === parsedIntAction.data.payload.actionId
-  )[0].actionType;
+  )[0]?.actionType;
 
   switch (interactionType) {
     case "URL":
@@ -363,13 +379,17 @@ function updateInteractionAction(
 
       return context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "URL") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               value: newURLProps?.value ?? action.props.value,
               variable: newURLProps?.variable ?? action.props.variable,
             },
           };
+
+          reactFlowUpdateInterceptor(context, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
     case "Anchor":
@@ -377,7 +397,7 @@ function updateInteractionAction(
       const newAnchorProps = parsedIntAction.data.payload.props;
       const updatedAnchorAction = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Anchor") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               nodeName: newAnchorProps?.nodeName ?? action.props.nodeName,
@@ -386,6 +406,10 @@ function updateInteractionAction(
               variable: newAnchorProps?.variable ?? action.props.variable,
             },
           };
+
+          reactFlowUpdateInterceptor(context, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
       return updatedAnchorAction;
@@ -394,7 +418,7 @@ function updateInteractionAction(
       const newAttributeProps = parsedIntAction.data.payload.props;
       const updatedAttributeAction = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Attribute") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               nodeName: newAttributeProps?.nodeName ?? action.props?.nodeName,
@@ -404,6 +428,10 @@ function updateInteractionAction(
               variable: newAttributeProps?.variable ?? action.props?.variable,
             },
           };
+
+          reactFlowUpdateInterceptor(context, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
       return updatedAttributeAction;
@@ -412,7 +440,7 @@ function updateInteractionAction(
       const newTextProps = parsedIntAction.data.payload.props;
       const updatedTextAction = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Text") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               nodeName: newTextProps?.nodeName ?? action.props.nodeName,
@@ -421,6 +449,10 @@ function updateInteractionAction(
               variable: newTextProps?.variable ?? action.props.variable,
             },
           };
+
+          reactFlowUpdateInterceptor(context, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
       console.log(updatedTextAction);
@@ -430,7 +462,7 @@ function updateInteractionAction(
       const newListProps = parsedIntAction.data.payload.props;
       const updatedListAction = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "List") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               nodeName: newListProps?.nodeName ?? action.props.nodeName,
@@ -438,6 +470,10 @@ function updateInteractionAction(
               variable: newListProps?.variable ?? action.props.variable,
             },
           };
+
+          reactFlowUpdateInterceptor(context, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
       return updatedListAction;
@@ -446,7 +482,7 @@ function updateInteractionAction(
       const newClickProps = parsedIntAction.data.payload.props;
       const updatedClickProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Click") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               nodeName: newClickProps?.nodeName ?? action.props.nodeName,
@@ -461,6 +497,10 @@ function updateInteractionAction(
                 newClickProps["Description"] ?? action.props["Description"],
             },
           };
+
+          reactFlowUpdateInterceptor(context, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
       console.log("updated click props action: ", updatedClickProps);
@@ -470,7 +510,7 @@ function updateInteractionAction(
       const newTypeProps = parsedIntAction.data.payload.props;
       const updatedTypeProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Type") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               ...action.props,
@@ -482,6 +522,10 @@ function updateInteractionAction(
                 action.props["Overwrite Existing Text"],
             },
           };
+
+          reactFlowUpdateInterceptor(context, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
       console.log("updatedTypeProps action: ", updatedTypeProps);
@@ -491,7 +535,7 @@ function updateInteractionAction(
       const newHoverProps = parsedIntAction.data.payload.props;
       const updatedHoverProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Hover") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               nodeName: newHoverProps?.nodeName ?? action.props.nodeName,
@@ -499,6 +543,10 @@ function updateInteractionAction(
               Description: newHoverProps["Description"],
             },
           } as TAction;
+
+          reactFlowUpdateInterceptor(context, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
       console.log("updatedHoverProps action: ", updatedHoverProps);
@@ -508,7 +556,7 @@ function updateInteractionAction(
       const newKeypressProps = parsedIntAction.data.payload.props;
       const updatedKeypressProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType == "Keypress") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               ...action.props,
@@ -517,6 +565,10 @@ function updateInteractionAction(
                 newKeypressProps["Wait For Page To Load"],
             },
           };
+
+          reactFlowUpdateInterceptor(context, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
       console.log("updatedKeypressProps action: ", updatedKeypressProps);
@@ -526,7 +578,7 @@ function updateInteractionAction(
       const newSelectProps = parsedIntAction.data.payload.props;
       const updatedSelectProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Select") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               nodeName: newSelectProps?.nodeName ?? action.props.nodeName,
@@ -537,6 +589,10 @@ function updateInteractionAction(
                 newSelectProps?.Description ?? action.props.Description,
             },
           };
+
+          reactFlowUpdateInterceptor(context, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
       console.log("updatedSelectProps action: ", updatedSelectProps);
@@ -547,7 +603,7 @@ function updateInteractionAction(
 
       const updatedCodeProps = context.flowActions.map((action) => {
         if (action.id === actionId && action.actionType === "Code") {
-          return {
+          const updatedAction = {
             ...action,
             props: {
               ...action.props,
@@ -555,6 +611,10 @@ function updateInteractionAction(
               vars: newCodeProps["vars"],
             },
           };
+
+          reactFlowUpdateInterceptor(contest, updatedAction);
+
+          return updatedAction;
         } else return action;
       });
       console.log("updatedCodeProps action: ", updatedCodeProps);
@@ -750,9 +810,11 @@ function createAction(context: TAppContext, event: TAppEvents) {
 
         const parsedIntAction = IntActionSchema.safeParse(newInteractionAction);
         if (parsedIntAction.success) {
-          if (newInteractionAction)
+          if (newInteractionAction) {
+            reactFlowCreateInterceptor(context, newInteractionAction);
             context.flowActions.push(newInteractionAction);
-          return context.flowActions;
+            return context.flowActions;
+          }
         } else console.warn(parsedIntAction.error);
         break;
 
@@ -777,6 +839,7 @@ function createAction(context: TAppContext, event: TAppEvents) {
           const parsedIFWHILE =
             ConditionActionSchema.safeParse(newConditionAction);
           if (parsedIFWHILE.success) {
+            reactFlowCreateInterceptor(context, newConditionAction);
             context.flowActions.push(newConditionAction);
             return context.flowActions;
           } else console.warn(parsedIFWHILE.error);
@@ -794,6 +857,7 @@ function createAction(context: TAppContext, event: TAppEvents) {
           };
           const parsedBarrier = BarrierActionSchema.safeParse(newBarrierAction);
           if (parsedBarrier.success) {
+            reactFlowCreateInterceptor(context, newBarrierAction);
             context.flowActions.push(newBarrierAction);
             return context.flowActions;
           } else console.warn(parsedBarrier.error);
@@ -814,6 +878,7 @@ function createAction(context: TAppContext, event: TAppEvents) {
 
         const parsedTab = TabsActionSchema.safeParse(newTabAction);
         if (parsedTab.success) {
+          reactFlowCreateInterceptor(context, newTabAction);
           context.flowActions.push(newTabAction);
           return context.flowActions;
         } else console.warn(parsedTab.error);
@@ -830,6 +895,7 @@ function createAction(context: TAppContext, event: TAppEvents) {
 
         const parsedSheet = SheetActionSchema.safeParse(newSheet);
         if (parsedSheet.success) {
+          reactFlowCreateInterceptor(context, newSheet);
           context.flowActions.push(newSheet);
           return context.flowActions;
         } else console.warn(parsedSheet.error);
@@ -866,7 +932,7 @@ function addConditionOperator(context: TAppContext, event: TAppEvents) {
 
   return context.flowActions.map((action) => {
     if (action.id === actionId && "conditions" in action) {
-      return {
+      const updatedAction = {
         ...action,
         conditions: [
           ...action.conditions,
@@ -877,6 +943,8 @@ function addConditionOperator(context: TAppContext, event: TAppEvents) {
           GeneralConditionDefaultTemplate,
         ],
       };
+      reactFlowUpdateInterceptor(context, updatedAction);
+      return updatedAction;
     } else return action;
   });
 }
@@ -924,13 +992,15 @@ function updateCondition(context: TAppContext, event: TAppEvents) {
         }
         return cond;
       });
-      return { ...action, conditions: updatedCond };
+      const updatedAction = { ...action, conditions: updatedCond };
+
+      reactFlowUpdateInterceptor(context, updatedAction);
+
+      return updatedAction;
     }
 
     return action;
   });
-
-  return updatedCondition;
 }
 
 function handleErrors(error: any) {
@@ -955,8 +1025,7 @@ export function EvaluateNesting(actions: TAction[]) {
   let marginLeft = 0;
 
   const newActions = actions?.map((action) => {
-    if(!action)
-      return;
+    if (!action) return;
 
     if (
       prevAction?.actionType === "IF" ||

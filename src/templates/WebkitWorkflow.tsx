@@ -9,6 +9,7 @@ import {
   memo,
   useContext,
 } from "react";
+import ActionsView from "../components/ActionFlow/ActionsView";
 
 // Execution Event
 import { listen } from "@tauri-apps/api/event";
@@ -35,17 +36,17 @@ function debounce(fn: any, ms: number) {
 type TWorkflowParams = {
   workflowName: string;
   workflow: any;
-  setDispatchWorkflow: () => void;
   AppDispatch: any;
   composeStatus: any;
+  settingsStore: any;
 };
 
 const Workflow = ({
   workflowName,
   workflow,
-  setDispatchWorkflow,
   AppDispatch,
   composeStatus,
+  settingsStore,
 }: TWorkflowParams) => {
   const [current, send, service] = useMachine(AppStateMachine);
   const { flowActions } = current.context;
@@ -69,14 +70,6 @@ const Workflow = ({
       send({ type: "UPDATE_WORKFLOW_FROM_TAURI", workflow });
     }
   }, [composeStatus, workflow]);
-
-  useEffect(() => {
-    send({ type: "UPDATE_WORKFLOW_FROM_TAURI", workflow });
-  }, [workflow]);
-
-  useEffect(() => {
-    setDispatchWorkflow((state) => send);
-  }, []);
 
   useEffect(() => {
     const subscription = service.subscribe((state) => {
@@ -110,18 +103,33 @@ const Workflow = ({
     };
   }, []);
 
-  return (
-    <VStack id="ported-component" w="100%" h="100%">
-      <Actions
-        dispatch={send}
-        current={current}
-        updateAppDatabase={(updatedActions) => {
-          updateDebounceRef.current(workflowName, updatedActions);
-        }}
-      />
-      <ActionMenu dispatch={send} />
-    </VStack>
-  );
+  console.log("WebkitWorkflow Rendered");
+
+  const renderWorkflow = useCallback(() => {
+    return (
+      <VStack id="ported-component" w="100%" h="100%">
+        <ActionsView
+          key={workflowName}
+          dispatch={send}
+          current={current}
+          updateAppDatabase={(updatedActions) => {
+            console.log(
+              "Updating Actions to Tauri Database for WorkflowName: ",
+              workflowName,
+              "and New Workflow: ",
+              updatedActions
+            );
+            updateDebounceRef.current(workflowName, updatedActions);
+          }}
+          workflowName={workflowName}
+          workflow={workflow}
+          settingsStore={settingsStore}
+        />
+      </VStack>
+    );
+  }, [workflowName, workflow, AppDispatch, composeStatus]);
+
+  return renderWorkflow();
 };
 
 export default memo(Workflow);

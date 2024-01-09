@@ -46,6 +46,19 @@ export default function ActionEdge({
     animation: offset ? `lindraw ${offset * 0.0003}s linear forwards` : "lindraw 2s linear forwards"
   }
 
+  // console.log(
+  //   "label: ", label,
+  //   ", sourcePosition: ", sourcePosition,
+  //   ", sourceX: ", sourceX,
+  //   ", sourceY: ", sourceY
+  // );
+  // console.log(
+  //   "label: ", label,
+  //   ", targetPosition: ", targetPosition,
+  //   ", targetX: ", targetX,
+  //   ", targetY: ", targetY
+  // );
+
   return (
     <>
       {/*<defs style={{}}>

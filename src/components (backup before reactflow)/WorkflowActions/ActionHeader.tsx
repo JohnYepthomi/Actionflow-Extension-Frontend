@@ -91,13 +91,14 @@ export default function ActionHeader({
       <HStack
         w="300px" //"100%"
         h="50px"
-        opacity={isDragging || isDragSelect ? 0.5 : 1}
         backgroundColor={
-          current?.context?.currentActionTickerId === action.id
+          isDragging || isDragSelect
+            ? "rgb(50,145,20)" 
+            : current?.context?.currentActionTickerId === action.id
               ? "green"
               : isFocused 
-                ? "#36356d"
-                : "rgba(35,35,35)"
+                ? "teal"
+                : "rgba(45,45,45)"
         }
         sx={{
           alignItems: "center",
@@ -108,7 +109,7 @@ export default function ActionHeader({
         }}
         boxShadow={"md"}
         border="1px solid rgb(95,95,95)"
-        borderRadius="5px 5px 5px 5px"
+        borderRadius="5px 0px 0px 5px"
         onClick={(e) => {
           // e.stopPropagation();
           // setClickedAction((state) => (state === action.id ? "" : action.id))

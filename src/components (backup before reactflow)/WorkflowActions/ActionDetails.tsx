@@ -44,9 +44,13 @@ function ActionDetails({
     return (
       <VStack
         w="100%"
-        backgroundColor="rgb(25,25,25)"
-        fontSize="0.8rem"
-        p={3}
+        backgroundColor="rgba(50,50,50,0.6)"
+        border="1px solid rgba(75,75,75,0.5)"
+        borderTop="none"
+        borderRadius="0px 0px 3px 3px"
+        sx={{
+          padding: 5,
+        }}
       >
         {INT_ACTIONS.includes(action.actionType) && (
           <Interaction

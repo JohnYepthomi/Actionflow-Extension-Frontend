@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, memo } from "react";
 import ActionHeader from "./ActionHeader";
 import ActionDetails from "./ActionDetails";
 import { TAction } from "../../Schemas/replaceTypes/Actions";
-import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import {
   HStack,
   VStack,

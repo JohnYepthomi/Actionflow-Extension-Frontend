@@ -16,7 +16,7 @@ const theme = extendTheme({
   styles: {
     global: {
       body: {
-        bg: "rgba(40,40,40)",
+        bg: "rgba(25,25,25)",
       },
       "input:focus": {
         borderColor: "orange !important",

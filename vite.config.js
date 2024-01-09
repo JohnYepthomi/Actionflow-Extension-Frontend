@@ -26,4 +26,8 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    // set to the same as dev port to test frontend build on Tauri Dev Mode before rust compile
+    port: 5173
+  }
 });

@@ -7,7 +7,7 @@ export default function GlobeSvgIcon() {
       width="13"
       height="13"
       fill="currentColor"
-      color="white"
+      color="orange"
       className="bi bi-globe-americas"
       viewBox="0 0 16 16"
     >

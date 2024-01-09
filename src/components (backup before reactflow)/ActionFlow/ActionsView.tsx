@@ -1,11 +1,14 @@
-import React, { memo, useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import ReactFlow, {
+    Background,
     Controls,
     Edge,
     EdgeChange,
     Handle,
+    MiniMap,
     Node,
     NodeChange,
+    Panel,
     Position,
     addEdge,
     applyEdgeChanges,
@@ -16,27 +19,27 @@ import ReactFlow, {
     useEdgesState,
     useNodesState,
     useOnSelectionChange,
-    useReactFlow,
     ReactFlowProvider,
+    useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { TAction } from "../../Schemas/replaceTypes/Actions";
+import ActionHeader from "../WorkflowActions/ActionHeader";
 import { motion } from 'framer-motion';
 import ActionEdge from "./ActionEdge";
 import ActionNode from "./ActionNode";
-import ActionDetailsNode from "./ActionDetailsNode";
 import { EvaluateNesting } from "../../AppState/state";
-import { Box, Button, Stack, CloseButton, IconButton } from "@chakra-ui/react";
-import FlowMenuPanel from "./Panels/FlowMenuPanel";
+import ActionDetails from "../WorkflowActions/ActionDetails";
+import { Box } from "@chakra-ui/react";
 
 const proOptions = { hideAttribution: true };
 const handleStyle = { left: 10 };
 
-const nodeType = { actionNode: ActionNode, detailsNode: ActionDetailsNode };
+const nodeType = { actionNode: ActionNode };
 const edgeType = { actionEdge: ActionEdge };
 
 const PerformanceLogger = {
-    enabled: true,    
+    enabled: false,    
     t0: 0,
     t1: 0,
     start: function(){
@@ -403,7 +406,6 @@ const node_template = (
     id,
     position: { x, y },
     data,
-    type: "actionNode"
     // dragHandle: '.custom-drag-handle'
 });
 
@@ -480,7 +482,7 @@ type TCreatedNodesAndEdges = { nodes: Node[]; edges: Edge[]; } | null;
 
 const actionsToRedEdges = (nodes: Node[]): TCreatedNodesAndEdges => {
     if (!Array.isArray(nodes) || nodes.length === 0) {
-        console.warn("[warning] fn actionsToRedEdges: passed bad argument - (nodes: Node[])", nodes);
+        console.warn("[warning] fn actionsToFlow: passed bad argument - (nodes: Node[])");
         return null;
     }
 
@@ -518,9 +520,9 @@ const actionsToRedEdges = (nodes: Node[]): TCreatedNodesAndEdges => {
     return _edges;
 };
 
-export const actionsToFlowWithNullItems = (actions: any): TCreatedNodesAndEdges => {
+const actionsToFlowWithNullItems = (actions: any): TCreatedNodesAndEdges => {
     if (!Array.isArray(actions) || actions.length === 0) {
-        console.warn("[warning] fn actionsToFlowWithNullItems: passed bad argument - (actions: TAction[])");
+        console.warn("[warning] fn actionsToFlow: passed bad argument - (actions: TAction[])");
         return null;
     }
 
@@ -578,7 +580,7 @@ export const actionsToFlowWithNullItems = (actions: any): TCreatedNodesAndEdges 
                             ["IF"].includes(prevActionType) ? "right" : "bottom",    // actions[prevIndex].id, //sourceHandle id
                             'actionEdge', //Connection Line type
                             String(index), //label
-                            { stroke: "rgb(70,70,70)" }, //stroke color,
+                            { stroke: "lightgreen" }, //stroke color,
                             false, //animated? 
                         )
                     );
@@ -620,9 +622,6 @@ export const actionsToFlowWithNullItems = (actions: any): TCreatedNodesAndEdges 
 };
 
 function createAnimatedEdge(nodes, edges, intersectedNode, draggedNode){
-    if(!intersectedNode)
-        return;
-    
     const intr_node_id = intersectedNode.id;
     const animatedEdgeId = `e${intr_node_id}-${draggedNode.id}`;
 
@@ -635,7 +634,7 @@ function createAnimatedEdge(nodes, edges, intersectedNode, draggedNode){
             "right", //intersectedNode.data.action.id,
             "actionEdge",
             intr_node_id,
-            { stroke: "teal", strokeWidth: 3 },
+            { stroke: "#00BFFF", strokeWidth: 4 },
             true
         );
 
@@ -658,110 +657,72 @@ const SelectionTest = () => {
 };
 
 //:::::::::::::::::::: CREATE EDGES :::::::::::::::::::::::::::
-    function createGreenEdgesBetween(originalNodes, headNode, middleNode, tailNode){
-        if(!headNode || !middleNode){
-            console.error("!headNode || !middleNode || tailNode");
+function createGreenEdgesBetween(originalNodes, headNode, middleNode, tailNode){
+    if(!headNode || !middleNode){
+        console.error("!headNode || !middleNode || tailNode");
+    }
+
+    let newEdges = [];
+
+    //TODO: 
+    // For dragSelect, pass the top and bottom node of the selections as an Array.
+    const allNodes = [headNode, ...(Array.isArray(middleNode) ? middleNode : [middleNode]), tailNode]
+    // const allNodes = [headNode, middleNode, tailNode];
+
+    allNodes.forEach((currNode, index) => {
+        const isLastIndex = index === allNodes.length - 1;
+        const nextNode = allNodes[index + 1];
+        const prevNode = allNodes[index -1];
+
+        if(((index === 1 || index === 2) && !tailNode) || isLastIndex)
+            return;
+
+        //skip edge between top and botom selected nodes
+        if((index === 1 && Array.isArray(middleNode))){
+            return;
         }
 
-        let newEdges = [];
+        let id = `e${currNode.id}-${nextNode.id}`;
+        let source = String(currNode.id);
+        let target = String(nextNode.id);
+        let sourceHandle = "bottom";
 
-        //TODO: 
-        // For dragSelect, pass the top and bottom node of the selections as an Array.
-        const allNodes = [headNode, ...(Array.isArray(middleNode) ? middleNode : [middleNode]), tailNode]
-        // const allNodes = [headNode, middleNode, tailNode];
+        const isIfEndLoop = currNode.data.action.actionType === "IF" && nextNode && nextNode.data.action.actionType === "END";
 
-        allNodes.forEach((currNode, index) => {
-            const isLastIndex = index === allNodes.length - 1;
-            const nextNode = allNodes[index + 1];
-            const prevNode = allNodes[index -1];
+        if(isIfEndLoop)
+            return;
 
-            if(((index === 1 || index === 2) && !tailNode) || isLastIndex)
-                return;
+        if(index === 0 && currNode.data.action.actionType === "IF"){
+            sourceHandle =  "right";
+        }
 
-            //skip edge between top and botom selected nodes
-            if((index === 1 && Array.isArray(middleNode))){
-                return;
-            }
+        newEdges.push({
+            id,
+            source,
+            target,
+            data: {offset: null, isRedEdge: false},
+            type: 'actionEdge',
+            label: target,
+            animated: false,
+            sourceHandle,
+        });
+    })
 
-            let id = `e${currNode.id}-${nextNode.id}`;
-            let source = String(currNode.id);
-            let target = String(nextNode.id);
-            let sourceHandle = "bottom";
-
-            const isIfEndLoop = currNode.data.action.actionType === "IF" && nextNode && nextNode.data.action.actionType === "END";
-
-            if(isIfEndLoop)
-                return;
-
-            if(index === 0 && currNode.data.action.actionType === "IF"){
-                sourceHandle =  "right";
-            }
-
-            newEdges.push({
-                id,
-                source,
-                target,
-                data: {offset: null, isRedEdge: false},
-                type: 'actionEdge',
-                label: target,
-                animated: false,
-                sourceHandle,
-                style: { stroke: 'rgb(70,70,70)' }
-            });
-        })
-
-        return newEdges;
-    }
+    return newEdges;
+}
 //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-const ActionsView = ({
-  current,
-  dispatch,
-  service,
-  updateAppDatabase,
-  workflowName,
-  workflow,
-  settingsStore
-}:{
-  current: any;
-  dispatch: any;
-  service: any;
-  updateAppDatabase: any;
-  workflowName: string;
-  workflow: any;
-  settingsStore: any;
-}): JSX.Element | null => {
-    const [nodes, setNodes, onNodesChange] = useNodesState([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+function ActionsView(): JSX.Element | null {
+    const n_e = useMemo(() => actionsToFlowWithNullItems(EvaluateNesting(BrowserActions)), []);
+
+    const [nodes, setNodes, onNodesChange] = useNodesState(n_e ? n_e.nodes : []);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(n_e ? n_e.edges : []);
 
     const draggedNodeRestore = useRef<{ nodes: Node[]; edges: Edge[]; } | null>();
     const [intNode, setIntNode] = useState();
     const [isFlowDragging, setIsFlowDragging] = useState(false);
-    const [showMenu, setShowMenu] = useState(false);
-    const reactFlowInstance = useReactFlow();
 
-    useEffect(() => {
-        dispatch({type: "FLOWINSTANCE", reactFlowInstance });
-        dispatch({type: "TAURI_APP_DB", updateAppDatabase });
-
-        return () => {
-            dispatch({type: "FLOWINSTANCE", reactFlowInstance: null });
-            dispatch({type: "TAURI_APP_DB", updateAppDatabase: null });
-        };
-    }, [workflow]);
-
-    useEffect(() => {
-        const preventRerenderAfterWorkflowUpdateToDatabase = nodes?.length !== workflow?.length;
-
-        if(!workflow || workflow.length === 0){
-            setNodes([]);
-            setEdges([]);
-        }else if(workflow.length && preventRerenderAfterWorkflowUpdateToDatabase){
-            const computedNodes = actionsToFlowWithNullItems(EvaluateNesting(workflow));
-            setNodes(computedNodes.nodes);
-            setEdges(computedNodes.edges);
-        }
-    },[workflow]);
+    const { setViewPort } = useReactFlow();
 
     //::::::::::::::::::::::::::::::::::: SELECTON DRAG :::::::::::::::::::::::::::::::::::
     const onSelectionDragStart = useCallback((event: React.MouseEvent, selectedNodes: Node[]) => {
@@ -846,6 +807,7 @@ const ActionsView = ({
             }
         }
 
+
         const updatedEdges = edges.filter(e => e.target !== selectedNodes[0].id && e.source !== selectedNodes[selectedNodes.length - 1].id)
         setEdges([...updatedEdges, ...(newEdge ? [newEdge] : [])]);
 
@@ -887,47 +849,44 @@ const ActionsView = ({
 
         setEdges([...remainingEdges, ...newGreenEdges, ...newRedEdges]);
 
-        const updatedNodes = splicedNodes.map((n, index) => {
-            if(computedNodes[index].data.action.id !== n.data.action.id){
-                console.error("computedNodes[index].data.action.id !== n.data.action.id at index: ", index, "for node: ", n);
-            }
-
-            const v_dist = 100;
-            const h_dist = 200;
-            const nest_level = computedNodes[index].data.action.nestingLevel;
-            const x = 
-                index === 0 
-                    ? 0 
-                    // : n.data.action.actionType === "END" 
-                    //     ? n.data.action.nestingLevel + 1 * h_dist
-                    : nest_level * h_dist;
-            const y = Math.abs(index * v_dist);
-
-            //reset 'isDragSelect' switch
-            n = {...n, data: {...n.data, isDragSelect: false }};
-
-            delete n.selected;
-            delete n.dragging;
-            delete n.width;
-            delete n.height;
-            delete n.positionAbsolute;
-
-            n.position = { x, y };
-
-            return n;
-        });
-
         //NODES
-        setNodes(updatedNodes);
+        setNodes(
+            splicedNodes.map((n, index) => {
+                if(computedNodes[index].data.action.id !== n.data.action.id){
+                    console.error("computedNodes[index].data.action.id !== n.data.action.id at index: ", index, "for node: ", n);
+                }
 
-        updateAppDatabase(updatedNodes.map(n => n.data.action));
+                const v_dist = 100;
+                const h_dist = 200;
+                const nest_level = computedNodes[index].data.action.nestingLevel;
+                const x = 
+                    index === 0 
+                        ? 0 
+                        // : n.data.action.actionType === "END" 
+                        //     ? n.data.action.nestingLevel + 1 * h_dist
+                        : nest_level * h_dist;
+                const y = Math.abs(index * v_dist);
+
+                //reset 'isDragSelect' switch
+                n = {...n, data: {...n.data, isDragSelect: false }};
+
+                delete n.selected;
+                delete n.dragging;
+                delete n.width;
+                delete n.height;
+                delete n.positionAbsolute;
+
+                n.position = { x, y };
+
+                return n;
+            })
+        );
 
         setIntNode(null);
 
     }, [draggedNodeRestore, setNodes, setEdges, nodes, edges, intNode, setIntNode, setIsFlowDragging]);
 
     const onSelectionDrag = useCallback((event: React.MouseEvent, _nodes: Node[]) => {
-
         PerformanceLogger.start("onSelectionDrag");
         
         setIsFlowDragging(true);
@@ -972,20 +931,17 @@ const ActionsView = ({
     //::::::::::::::::::::::::::::::::::: NODE DRAG :::::::::::::::::::::::::::::::::::::::
     
     const onNodeDrag = useCallback((event: React.MouseEvent, draggedNode: Node, _nodes: Node[]) => {
-        if(draggedNode.type === "detailsNode")
-            return;
-
         PerformanceLogger.start("onNodeDrag");
         const intersectedNode = nodes.find(n => 
             n.id !== draggedNode.id
-            && n.position.y <= draggedNode.position.y
-            && n.position.y >= draggedNode.position.y - 150
+                &&
+            n.position.y <= draggedNode.position.y
+                &&
+            n.position.y >= draggedNode.position.y - 142
         );
-
-        if (edges.filter(e => e?.animated).length === 0){
+        
+        if (edges.filter(e => e.animated).length === 0){
             console.log("[onNodeDrag] executing dragStartCode");
-
-            console.log("nodes: ", nodes);
 
             const otherNodes = nodes.filter(n => n.id !== draggedNode.id);
             const computedActions = EvaluateNesting(otherNodes.map(n => n.data.action));
@@ -995,9 +951,6 @@ const ActionsView = ({
 
                 return sn;
             });
-
-            console.log("computedOtherNodes: ", computedOtherNodes);
-
             setNodes([
                 ...otherNodes.map((n, index) => {
                     if(computedOtherNodes[index].data.action.id !== n.data.action.id){
@@ -1051,7 +1004,6 @@ const ActionsView = ({
                         data: { offset: null, isRedEdge: false },
                         label: "",
                         animated: false,
-                        style: {stroke: 'rgb(70,70,70)'}
                     };
                 }
             }
@@ -1063,12 +1015,7 @@ const ActionsView = ({
 
             const newRedEdges = actionsToRedEdges(computedOtherNodes);
             const animatedEdge = createAnimatedEdge(nodes, edges, intersectedNode, draggedNode);
-            setEdges([
-                ...remainingEdges,
-                ...(newEdge ? [newEdge] : []),
-                ...(newRedEdges ? newRedEdges : []),
-                ...(animatedEdge ? [animatedEdge] : [])
-            ]);
+            setEdges([...remainingEdges, ...(newEdge ? [newEdge] : []), ...newRedEdges, animatedEdge]);
         } 
         else{
             if (intNode?.id === intersectedNode?.id || !intersectedNode)
@@ -1077,15 +1024,12 @@ const ActionsView = ({
             setIntNode(intersectedNode);
             const filteredEdges = edges.filter(e => e.target !== draggedNode.id);
             const animatedEdge = createAnimatedEdge(nodes, edges, intersectedNode, draggedNode);
-            setEdges([...filteredEdges, ...(animatedEdge ? [animatedEdge] : [])]);
+            setEdges([...filteredEdges, animatedEdge]);
         }
         PerformanceLogger.stop("onNodeDrag");
     }, [draggedNodeRestore, setNodes, setEdges, edges, nodes, intNode, setIntNode, setIsFlowDragging]);
 
     const onNodeDragStop = useCallback((event: React.MouseEvent, node: Node, draggedNode: Node[]) => {
-        if(draggedNode.type === "detailsNode")
-            return;
-
         setIsFlowDragging(false);
 
         if(!intNode){
@@ -1094,9 +1038,6 @@ const ActionsView = ({
         }
 
         const nodesCopy = JSON.parse(JSON.stringify(nodes));
-        
-        console.log({nodes});
-
         const splicedNodes = nodesCopy.filter(n => n.id !== draggedNode[0].id);
         const startIndex = splicedNodes.findIndex(n => n.id === intNode.id);
         splicedNodes.splice(startIndex + 1, 0, draggedNode[0]);
@@ -1125,40 +1066,38 @@ const ActionsView = ({
             .filter(e => e.data.isRedEdge !== true);
         setEdges([...remainingEdges, ...newGreenEdges, ...newRedEdges]);
 
-        const updatedNodes = splicedNodes.map((n, index) => {
-            if(computedNodes[index].data.action.id !== n.data.action.id){
-                console.error("computedNodes[index].data.action.id !== n.data.action.id at index: ", index, "for node: ", n);
-            }
-
-            const v_dist = 100;
-            const h_dist = 200;
-            const nest_level = computedNodes[index].data.action.nestingLevel;
-            const x = 
-                index === 0 
-                    ? 0 
-                    // : n.data.action.actionType === "END" 
-                    //     ? n.data.action.nestingLevel + 1 * h_dist
-                    : nest_level * h_dist;
-            const y = Math.abs(index * v_dist);
-
-            //reset 'isDragging' switch
-            n = {...n, data: {...n.data, isDragging: false }};
-
-            delete n.selected;
-            delete n.dragging;
-            delete n.width;
-            delete n.height;
-            delete n.positionAbsolute;
-
-            n.position = { x, y };
-
-            return n;
-        });
-
         //NODES
-        setNodes(updatedNodes);
+        setNodes(
+            splicedNodes.map((n, index) => {
+                if(computedNodes[index].data.action.id !== n.data.action.id){
+                    console.error("computedNodes[index].data.action.id !== n.data.action.id at index: ", index, "for node: ", n);
+                }
 
-        updateAppDatabase(updatedNodes.map(n => n.data.action));
+                const v_dist = 100;
+                const h_dist = 200;
+                const nest_level = computedNodes[index].data.action.nestingLevel;
+                const x = 
+                    index === 0 
+                        ? 0 
+                        // : n.data.action.actionType === "END" 
+                        //     ? n.data.action.nestingLevel + 1 * h_dist
+                        : nest_level * h_dist;
+                const y = Math.abs(index * v_dist);
+
+                //reset 'isDragging' switch
+                n = {...n, data: {...n.data, isDragging: false }};
+
+                delete n.selected;
+                delete n.dragging;
+                delete n.width;
+                delete n.height;
+                delete n.positionAbsolute;
+
+                n.position = { x, y };
+
+                return n;
+            })
+        );
 
         setIntNode(null);
     },
@@ -1174,69 +1113,38 @@ const ActionsView = ({
         actionsToFlowWithNullItems,
     ]);
 
-    const onNodeDragStart = useCallback((event: React.MouseEvent, draggedNode: Node, nodes: Node[]) => {
-        if(draggedNode.type === 'detailsNode')
-            return;
-
-        // remove any menuNode or detailsNode and edges
-        setNodes(nds => {
-            nds = nds.filter(nd => !nd.data?.isDetailNode);
-            return nds;
-        });
-        setEdges(eds => {
-            eds = eds.filter(e => e.sourceHandle !== 'details-handle');
-            return eds;
-        });
-    }, [setNodes, setEdges, nodes, edges]);
-
-    //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
     const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-        if(node.type === 'detailsNode')
-            return;
+        console.log("onNodeClick");
 
-        console.log('onNodeClick')
         setNodes(nds => nds.map(n => {
-            if(n.data?.isFocused)
+            if(n.data.isFocused)
                 n.data = {...n.data, isFocused: false};
 
-            if(n.data?.action.id === node.data.action.id){
+            if(n.data.action.id === node.data.action.id){
                 n.data = {...n.data, isFocused: true };
             }
 
             return n;
-        }));
-    }, []);
-
-    const handleClose = useCallback(() => {
-        setShowMenu(false);
-    },[]);
+        }))
+    }, [])
 
     useEffect(()=>{
-        // window.oncontextmenu = function (){
-        //     console.log("window.oncontextmenu");
+        window.oncontextmenu = function (){
+            console.log("window.oncontextmenu");
 
-        //     if (!draggedNodeRestore.current)
-        //         return false;
+            if (!draggedNodeRestore.current)
+                return false;
 
-        //     setNodes(draggedNodeRestore.current.nodes);
-        //     setEdges(draggedNodeRestore.current.edges);
-        //     draggedNodeRestore.current = null;
+            setNodes(draggedNodeRestore.current.nodes);
+            setEdges(draggedNodeRestore.current.edges);
+            draggedNodeRestore.current = null;
 
-        //     return false;
-        // };
+            return false;
+        };
     },[isFlowDragging]);
 
-
-    console.log("workflow: ", workflow);
-
     return (
-        <Box
-            style={{
-                width: '100%',
-                height: 'calc(100vh - 50px)',
-                backgroundColor: "rgb(17, 15, 15)"
-            }}>
+        <div style={{ width: '100vw', height: '100vh', backgroundColor: "rgba(25,25,25)" }}>
             <ReactFlow
                 // onInit={(instance)=>{}}
                 nodes={nodes}
@@ -1246,7 +1154,6 @@ const ActionsView = ({
                 onEdgesChange={onEdgesChange}
 
                 onNodeDrag={onNodeDrag}
-                onNodeDragStart={onNodeDragStart}
                 onNodeDragStop={onNodeDragStop}
 
                 onSelectionDragStart={onSelectionDragStart}
@@ -1262,78 +1169,47 @@ const ActionsView = ({
                 // snapToGrid
                 elevateEdgesOnSelect={true}
                 fitView
-                fitViewOptions={{duration: 500, minZoom: 0.4, maxZoom: 0.6, nodes: [nodes[nodes.length -1]]}}
-                minZoom={0.4}
-                maxZoom={0.7}
+                // minZoom={0.6}
                 onlyRenderVisibleElements
                 // preventScrolling={false}
                 nodesConnectable={false}
                 nodesFocusable={true}
                 autoPanOnConnect={true}
                 selectionMode="partial"
-
-                //FIGMA LIKE
-                // panOnDrag={[1, 2]}
                 // panOnScroll={true}
-                // selectionOnDrag={true}
-
                 edgesFocusable={false}
                 autoPanOnNodeDrag={true}
                 // nodesDraggable={false}
 
                 onNodeClick={onNodeClick}
-            >   
-                <Controls position="bottom-left"/>
-    
-                <FlowMenuPanel
-                    position="top-right"
-                    setShowMenu={setShowMenu}
-                    nodes={nodes}
-                    dispatch={dispatch}
-                    current={current}
-                    workflowName={workflowName}
-                    workflow={nodes.length ? nodes.map(n => n.data.action) : []}
-                    settingsStore={settingsStore}
-                />
+            >
+                <Controls />
+                {/*<MiniMap />*/}
+                <Panel position="top-right" >
+                    <Box sx={{ backgroundColor: "rgb(45,45,45)"}}>
+                        {nodes.filter(n => n.data.isFocused).map(focusedNode => {
+                            return <ActionDetails action={focusedNode.data.action} current={null} dispatch={null} />
+                        })}
+                    </Box>
+                </Panel>
+                {/*<Background
+                    gap={12}
+                    size={1}
+                    style={{
+                        backgroundColor: 'rgba(145,45,45,0.5)'
+                    }}
+                />*/}
+
+                {/*<SelectionTest />*/}
             </ReactFlow>
-        </Box>
+        </div>
     );
-};
-
-function Main({
-  current,
-  dispatch,
-  service,
-  updateAppDatabase,
-  workflowName,
-  workflow,
-  settingsStore
-}:{
-  current: any;
-  dispatch: any;
-  service: any;
-  updateAppDatabase: any;
-  workflowName: string;
-  workflow: any;
-}) {
-
-    const renderMain = useCallback(() => {
-        return (
-            <ReactFlowProvider>
-                <ActionsView 
-                    current={current}
-                    dispatch={dispatch}
-                    service={service}
-                    updateAppDatabase={updateAppDatabase}
-                    workflowName={workflowName}
-                    workflow={workflow}
-                    settingsStore={settingsStore}
-                />
-            </ReactFlowProvider>
-        );
-    },[current, dispatch, service, updateAppDatabase, workflowName, workflow, settingsStore]);
-
-    return renderMain();
 }
 
-export default memo(Main);
+export default function Main() {
+    return (
+        <ReactFlowProvider>
+            <ActionsView />
+        </ReactFlowProvider>
+    );
+}

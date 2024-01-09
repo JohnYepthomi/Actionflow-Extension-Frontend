@@ -9,9 +9,6 @@ import {
   useDisclosure,
   Button,
   Stack,
-  IconButton,
-  Divider,
-  CloseButton
 } from "@chakra-ui/react";
 import { InteractionDefinitions } from "../ActionsDefinitions/definitions";
 import React, {
@@ -23,8 +20,6 @@ import React, {
 } from "react";
 import { TAppEvents } from "../Schemas/replaceTypes/StateEvents";
 import { VStack, Box, HStack } from "@chakra-ui/react";
-import ActionIcon from "./WorkflowActions/ActionIcon";
-import { motion } from "framer-motion";
 
 // Global State
 import { GlobalStateContext } from "../AppState/GlobalState";
@@ -42,39 +37,17 @@ function MenuCategory({
   dispatch,
   current,
 }: TMenuCategory) {
-
-
   return (
-    <>
-      <Box
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 2222
-        }}
-        color="rgb(139, 131, 167)"
-        fontSize="0.75rem"
-        fontWeight="bold"
-        backgroundColor="rgb(35,35,35)"
-        w="100%"
-        h="100%"
-        p={1}
-      >{title}</Box>
-
-      <VStack
-        w="100%"
-        h="100%"
-      >
+    <Box w="100%">
+      <Box>{title}</Box>
+      <Box>
         {actionDefintions &&
           actionDefintions.map(
             (item: { name: string; svg: () => ReactNode }, index: number) => {
               return (
                 <Button
-                  borderRadius={3}
-                  variant="solid"
-                  backgroundColor="#282b31"
-                  w="130px"
-                  h={25}
+                  w={20}
+                  m={1}
                   onClick={(e) => {
                     e.preventDefault();
 
@@ -86,44 +59,22 @@ function MenuCategory({
                     } satisfies TAppEvents);
                   }}
                 >
-                  <HStack
-                    w="100%"
-                    h="100%"
-                    fontSize="0.7rem"
-                    key={index}
-                    alignItems="center"
-                    justifyContent="space-between"
-                    p={1}
-                    gap={3}
-                  >
-                    <ActionIcon
-                      actionName={item.name}
-                      iconSize={5}
-                      style={{
-                        border: 'none',
-                        color: 'lightgray'
-                      }}
-                    />
-                    <Box
-                      color="lightgray"
-                      w="100%"
-                      sx={{display: 'flex'}}
-                    >
-                      {item.name}
-                    </Box>
+                  <HStack fontSize="0.7rem" key={index}>
+                    {item.svg()}
+                    <Box>{item.name}</Box>
                   </HStack>
                 </Button>
               );
             }
           )}
-      </VStack>
-    </>
+      </Box>
+    </Box>
   );
 }
 
 const Categories = [
   {
-    categoryName: "Common Actions",
+    categoryName: "Page Interactions",
     defs: InteractionDefinitions.filter(
       (a) =>
         !["IF", "END", "Navigate", "NewTab", "SelectTab", "CloseTab"].includes(
@@ -136,7 +87,7 @@ const Categories = [
     defs: [{ name: "Sheet", svg: () => "sheet svg" }],
   },
   {
-    categoryName: "Flow Controls",
+    categoryName: "Conditinals",
     defs: InteractionDefinitions.filter((a) =>
       ["IF", "WHILE", "END", "ELSE"].includes(a.name)
     ),
@@ -149,41 +100,59 @@ const Categories = [
   },
 ];
 
-function ActionMenu({ dispatch }) {
-  // const { isOpen, onOpen, onClose } = useDisclosure();
+export default function ActionMenu({ dispatch }) {
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const btnRef = React.useRef();
   // const globalServices = useContext(GlobalStateContext);
   // const { send } = globalServices.appService;
 
   const renderActionMenu = useCallback(() => {
     console.log("ActionMenu Rendered");
-      return (
-        <VStack
-          w="100%"
-          h="fit-content"
-          gap={2}
-          pb={2}
+    return (
+      <>
+        <Button
+          ref={btnRef}
+          colorScheme="gray"
+          // variant="outline"
+          onClick={onOpen}
         >
-          {Categories.map((cat, index) => {
+          Pick Action
+        </Button>
 
-            // if(index == 0)
-            return (
-              <>
-                <MenuCategory
-                  title={cat.categoryName}
-                  actionDefintions={cat.defs}
-                  dispatch={dispatch}
-                />
+        <Drawer
+          isOpen={isOpen}
+          placement="right"
+          onClose={onClose}
+          finalFocusRef={btnRef}
+        >
+          <DrawerOverlay />
+          <DrawerContent>
+            <DrawerCloseButton />
+            <DrawerHeader textAlign="center">Actions</DrawerHeader>
 
-                { /* index !== (Categories.length - 1) && <Divider /> */}
-              </>
-            );
-          })}
-        </VStack>
-      );
-  }, [dispatch]);
+            <DrawerBody>
+              <VStack gap={3} alignItems="center" justifyContent="center">
+                {Categories.map((cat) => (
+                  <MenuCategory
+                    title={cat.categoryName}
+                    actionDefintions={cat.defs}
+                    dispatch={dispatch}
+                  />
+                ))}
+              </VStack>
+            </DrawerBody>
+
+            <DrawerFooter>
+              {/* <Button variant="outline" mr={3} onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button colorScheme="blue">Save</Button> */}
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      </>
+    );
+  }, [dispatch, isOpen, onOpen, onClose]);
 
   return renderActionMenu();
 }
-
-export default memo(ActionMenu);

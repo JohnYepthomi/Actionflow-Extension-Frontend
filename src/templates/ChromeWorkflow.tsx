@@ -5,6 +5,7 @@ import { TRecordableActions } from "../Types/ActionTypes/Action";
 import { ActionMenu, ActiveTab, RecordingButton, Actions } from "../components";
 import { TAppEvents } from "../Schemas/replaceTypes/StateEvents";
 import { Center, Box, Button, HStack, VStack } from "@chakra-ui/react";
+import ActionsView from "../components/ActionFlow/ActionsView";
 
 const test = [
   { id: "anWFdfgd-dl4-kja-s", actionType: "Click", nestingLevel: 0 },
@@ -174,10 +175,10 @@ const ChromeWorkflow = ({ current, send, service }: TWorkflowParams) => {
 
   return (
     <VStack id="ported-component" w="100%" h="100%" px={20}>
-      <ActionMenu dispatch={send} />
+      {/*<ActionMenu dispatch={send} /> */}
       <ActiveTab current={current} />
       <RecordingButton current={current} dispatch={send} />
-      <Actions dispatch={send} current={current} service={service} />
+      <ActionsView dispatch={send} current={current} service={service} />
 
       <Button
         style={{
